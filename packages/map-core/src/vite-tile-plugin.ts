@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { MBTilesReader } from './mbtiles-reader.ts';
+import { MBTilesReader } from './mbtiles-reader.js';
 import * as path from 'path';
 import * as fs from 'fs';
 

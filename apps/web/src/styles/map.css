@@ -92,3 +92,185 @@
 .vehicle-icon {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
+
+/* POI Pins */
+.poi-marker-div {
+  background: transparent;
+  border: none;
+}
+
+.poi-map-pin {
+  width: 28px;
+  height: 28px;
+  background: rgba(22, 27, 34, 0.92);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.poi-map-pin:hover {
+  transform: scale(1.2);
+  border-color: var(--accent-primary);
+  background: rgba(30, 41, 59, 0.98);
+}
+
+/* Destination Marker with Radar Pulse */
+.destination-marker-div {
+  background: transparent;
+  border: none;
+}
+
+.destination-pulse-pin {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-head {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 4px 14px rgba(255, 65, 108, 0.6);
+  z-index: 2;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ff416c;
+  animation: dest-pulse 1.8s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  z-index: 1;
+}
+
+@keyframes dest-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Leaflet Dark Popup Customization */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+  padding: 6px 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--text-primary) !important;
+}
+
+/* POI Popup Body */
+.poi-popup-content {
+  padding: var(--space-4);
+  width: 250px;
+}
+
+.poi-popup-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.poi-popup-icon {
+  font-size: 22px;
+}
+
+.poi-popup-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.poi-popup-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poi-popup-cat {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+}
+
+.poi-popup-addr {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  line-height: 1.3;
+}
+
+.poi-popup-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.poi-popup-dist {
+  color: var(--accent-secondary);
+  font-weight: 600;
+}
+
+.poi-popup-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.poi-destination-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 65, 108, 0.5) !important;
+  font-size: var(--text-xs) !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px 8px !important;
+}

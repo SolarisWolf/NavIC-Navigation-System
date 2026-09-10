@@ -22,7 +22,8 @@
       "@navic/sensor-fusion": ["./packages/sensor-fusion/src"],
       "@navic/navigation-core": ["./packages/navigation-core/src"],
       "@navic/routing-core": ["./packages/routing-core/src"],
-      "@navic/map-core": ["./packages/map-core/src"]
+      "@navic/map-core": ["./packages/map-core/src"],
+      "@navic/map-core/*": ["./packages/map-core/src/*"]
     }
   },
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

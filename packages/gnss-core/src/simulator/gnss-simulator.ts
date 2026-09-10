@@ -61,7 +61,7 @@ export class GNSSSimulator implements GNSSProvider {
 
   private config: GNSSSimulatorConfig;
   private logger: Logger;
-  private intervalId: number | null = null;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
   private isRunning: boolean = false;
 
   // Callbacks
@@ -74,7 +74,7 @@ export class GNSSSimulator implements GNSSProvider {
   private disabledConstellations: Set<Constellation> = new Set();
   private signalQuality: 'strong' | 'moderate' | 'weak' = 'strong';
   private isOutage: boolean = false;
-  private outageTimeoutId: number | null = null;
+  private outageTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private speedMultiplier: number;
   private lastTimestamp: number = 0;
   private isPaused: boolean = false;
