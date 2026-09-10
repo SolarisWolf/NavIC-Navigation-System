@@ -1,0 +1,462 @@
+[
+  {
+    "id": "poi-hosp-1",
+    "name": "All India Institute of Medical Sciences (AIIMS)",
+    "category": "Hospital",
+    "latitude": 28.5672,
+    "longitude": 77.2100,
+    "address": "Sri Aurobindo Marg, Ansari Nagar, New Delhi",
+    "phone": "+91-11-26588500",
+    "tags": { "emergency": "yes", "beds": "2500", "type": "public" }
+  },
+  {
+    "id": "poi-hosp-2",
+    "name": "Safdarjung Hospital",
+    "category": "Hospital",
+    "latitude": 28.5705,
+    "longitude": 77.2078,
+    "address": "Ring Road, Opposite AIIMS, New Delhi",
+    "phone": "+91-11-26165060",
+    "tags": { "emergency": "yes", "type": "public" }
+  },
+  {
+    "id": "poi-hosp-3",
+    "name": "Max Super Speciality Hospital Saket",
+    "category": "Hospital",
+    "latitude": 28.5273,
+    "longitude": 77.2119,
+    "address": "1, 2, Press Enclave Marg, Saket Institutional Area, New Delhi",
+    "phone": "+91-11-26515050",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-hosp-4",
+    "name": "Indraprastha Apollo Hospital",
+    "category": "Hospital",
+    "latitude": 28.5417,
+    "longitude": 77.2831,
+    "address": "Delhi Mathura Road, Sarita Vihar, New Delhi",
+    "phone": "+91-11-71791090",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-hosp-5",
+    "name": "Sir Ganga Ram Hospital",
+    "category": "Hospital",
+    "latitude": 28.6385,
+    "longitude": 77.1895,
+    "address": "Sir Ganga Ram Hospital Marg, Rajinder Nagar, New Delhi",
+    "phone": "+91-11-25750000",
+    "tags": { "emergency": "yes", "type": "trust" }
+  },
+  {
+    "id": "poi-hosp-6",
+    "name": "Moolchand Medcity",
+    "category": "Hospital",
+    "latitude": 28.5663,
+    "longitude": 77.2346,
+    "address": "Lala Lajpat Rai Marg, Near Defence Colony, New Delhi",
+    "phone": "+91-11-42000000",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-pol-1",
+    "name": "Connaught Place Police Station",
+    "category": "Police",
+    "latitude": 28.6328,
+    "longitude": 77.2195,
+    "address": "Block A, Connaught Place, New Delhi",
+    "phone": "+91-11-23412233",
+    "tags": { "jurisdiction": "New Delhi District" }
+  },
+  {
+    "id": "poi-pol-2",
+    "name": "Parliament Street Police Station",
+    "category": "Police",
+    "latitude": 28.6247,
+    "longitude": 77.2144,
+    "address": "Parliament Street, Near Patel Chowk, New Delhi",
+    "phone": "+91-11-23361100",
+    "tags": { "jurisdiction": "Central Delhi" }
+  },
+  {
+    "id": "poi-pol-3",
+    "name": "Chanakyapuri Police Station",
+    "category": "Police",
+    "latitude": 28.5982,
+    "longitude": 77.1878,
+    "address": "Nyaya Marg, Diplomatic Enclave, Chanakyapuri, New Delhi",
+    "phone": "+91-11-24103100",
+    "tags": { "jurisdiction": "Diplomatic Enclave" }
+  },
+  {
+    "id": "poi-pol-4",
+    "name": "Tilak Marg Police Station",
+    "category": "Police",
+    "latitude": 28.6180,
+    "longitude": 77.2380,
+    "address": "Tilak Marg, Near Supreme Court, New Delhi",
+    "phone": "+91-11-23381100",
+    "tags": { "jurisdiction": "New Delhi" }
+  },
+  {
+    "id": "poi-pol-5",
+    "name": "Hauz Khas Police Station",
+    "category": "Police",
+    "latitude": 28.5492,
+    "longitude": 77.2065,
+    "address": "Aurobindo Marg, Hauz Khas, New Delhi",
+    "phone": "+91-11-26510093",
+    "tags": { "jurisdiction": "South Delhi" }
+  },
+  {
+    "id": "poi-petrol-1",
+    "name": "IndianOil COCO Auto Care Centre",
+    "category": "PetrolStation",
+    "latitude": 28.6272,
+    "longitude": 77.2178,
+    "address": "Janpath Road, Near Windsor Place, New Delhi",
+    "tags": { "brand": "IndianOil", "fuel": "petrol,diesel,cng,ev" }
+  },
+  {
+    "id": "poi-petrol-2",
+    "name": "Bharat Petroleum Chanakyapuri",
+    "category": "PetrolStation",
+    "latitude": 28.6015,
+    "longitude": 77.1950,
+    "address": "Shanti Path, Chanakyapuri, New Delhi",
+    "tags": { "brand": "BPCL", "fuel": "petrol,diesel,ev" }
+  },
+  {
+    "id": "poi-petrol-3",
+    "name": "HP Auto Centre Lodhi Road",
+    "category": "PetrolStation",
+    "latitude": 28.5905,
+    "longitude": 77.2280,
+    "address": "Lodhi Road, Near Lodhi Gardens, New Delhi",
+    "tags": { "brand": "HPCL", "fuel": "petrol,diesel,cng" }
+  },
+  {
+    "id": "poi-petrol-4",
+    "name": "Shell Fuel Station Moolchand",
+    "category": "PetrolStation",
+    "latitude": 28.5630,
+    "longitude": 77.2370,
+    "address": "Ring Road, Near Moolchand Flyover, New Delhi",
+    "tags": { "brand": "Shell", "fuel": "v-power,petrol,diesel" }
+  },
+  {
+    "id": "poi-petrol-5",
+    "name": "IndianOil Petrol Pump AIIMS",
+    "category": "PetrolStation",
+    "latitude": 28.5720,
+    "longitude": 77.2050,
+    "address": "Ring Road, Safdarjung Enclave, New Delhi",
+    "tags": { "brand": "IndianOil", "fuel": "petrol,diesel" }
+  },
+  {
+    "id": "poi-rest-1",
+    "name": "Saravana Bhavan Janpath",
+    "category": "Restaurant",
+    "latitude": 28.6280,
+    "longitude": 77.2185,
+    "address": "P-13, Connaught Circus, Janpath, New Delhi",
+    "tags": { "cuisine": "South Indian Vegetarian", "rating": "4.5" }
+  },
+  {
+    "id": "poi-rest-2",
+    "name": "Haldirams Connaught Place",
+    "category": "Restaurant",
+    "latitude": 28.6310,
+    "longitude": 77.2205,
+    "address": "B-6, Connaught Place, New Delhi",
+    "tags": { "cuisine": "North Indian, Sweets, Street Food", "rating": "4.4" }
+  },
+  {
+    "id": "poi-rest-3",
+    "name": "Karim's Historic Mughlai",
+    "category": "Restaurant",
+    "latitude": 28.6508,
+    "longitude": 77.2335,
+    "address": "Gali Kababian, Jama Masjid, Old Delhi",
+    "tags": { "cuisine": "Mughlai, Kebabs", "rating": "4.6" }
+  },
+  {
+    "id": "poi-rest-4",
+    "name": "Bukhara Restaurant (ITC Maurya)",
+    "category": "Restaurant",
+    "latitude": 28.5975,
+    "longitude": 77.1740,
+    "address": "ITC Maurya, Sardar Patel Marg, Diplomatic Enclave, New Delhi",
+    "tags": { "cuisine": "North-West Frontier Fine Dining", "rating": "4.8" }
+  },
+  {
+    "id": "poi-rest-5",
+    "name": "Gulati Restaurant Pandara Road",
+    "category": "Restaurant",
+    "latitude": 28.6080,
+    "longitude": 77.2345,
+    "address": "6, Pandara Road Market, India Gate, New Delhi",
+    "tags": { "cuisine": "Butter Chicken, North Indian", "rating": "4.6" }
+  },
+  {
+    "id": "poi-hotel-1",
+    "name": "The Taj Mahal Hotel",
+    "category": "Hotel",
+    "latitude": 28.6048,
+    "longitude": 77.2255,
+    "address": "1, Mansingh Road, Near India Gate, New Delhi",
+    "phone": "+91-11-23026162",
+    "tags": { "stars": "5", "type": "luxury" }
+  },
+  {
+    "id": "poi-hotel-2",
+    "name": "The Imperial New Delhi",
+    "category": "Hotel",
+    "latitude": 28.6240,
+    "longitude": 77.2185,
+    "address": "Janpath Lane, Connaught Place, New Delhi",
+    "phone": "+91-11-23341234",
+    "tags": { "stars": "5", "type": "heritage_luxury" }
+  },
+  {
+    "id": "poi-hotel-3",
+    "name": "ITC Maurya, A Luxury Collection Hotel",
+    "category": "Hotel",
+    "latitude": 28.5970,
+    "longitude": 77.1735,
+    "address": "Diplomatic Enclave, Sardar Patel Marg, New Delhi",
+    "phone": "+91-11-26112233",
+    "tags": { "stars": "5", "type": "luxury" }
+  },
+  {
+    "id": "poi-hotel-4",
+    "name": "The Leela Palace Chanakyapuri",
+    "category": "Hotel",
+    "latitude": 28.5795,
+    "longitude": 77.1870,
+    "address": "Diplomatic Enclave, Chanakyapuri, New Delhi",
+    "phone": "+91-11-39331234",
+    "tags": { "stars": "5", "type": "luxury" }
+  },
+  {
+    "id": "poi-hotel-5",
+    "name": "The Oberoi New Delhi",
+    "category": "Hotel",
+    "latitude": 28.5995,
+    "longitude": 77.2400,
+    "address": "Dr Zakir Hussain Marg, Golf Links, New Delhi",
+    "phone": "+91-11-24363030",
+    "tags": { "stars": "5", "type": "luxury" }
+  },
+  {
+    "id": "poi-edu-1",
+    "name": "Indian Institute of Technology Delhi (IIT Delhi)",
+    "category": "College",
+    "latitude": 28.5450,
+    "longitude": 77.1926,
+    "address": "Hauz Khas, New Delhi",
+    "phone": "+91-11-26591000",
+    "tags": { "type": "engineering_institute" }
+  },
+  {
+    "id": "poi-edu-2",
+    "name": "Delhi University (North Campus)",
+    "category": "College",
+    "latitude": 28.6905,
+    "longitude": 77.2085,
+    "address": "University Enclave, North Campus, Delhi",
+    "tags": { "type": "central_university" }
+  },
+  {
+    "id": "poi-edu-3",
+    "name": "Delhi Public School R.K. Puram",
+    "category": "School",
+    "latitude": 28.5630,
+    "longitude": 77.1795,
+    "address": "Sector 12, R.K. Puram, New Delhi",
+    "phone": "+91-11-49115555",
+    "tags": { "type": "secondary_school" }
+  },
+  {
+    "id": "poi-edu-4",
+    "name": "Modern School Barakhamba Road",
+    "category": "School",
+    "latitude": 28.6295,
+    "longitude": 77.2315,
+    "address": "Barakhamba Road, Connaught Place, New Delhi",
+    "tags": { "type": "secondary_school" }
+  },
+  {
+    "id": "poi-edu-5",
+    "name": "St. Stephen's College",
+    "category": "College",
+    "latitude": 28.6850,
+    "longitude": 77.2115,
+    "address": "Sudhir Bose Marg, University Enclave, Delhi",
+    "tags": { "type": "arts_science_college" }
+  },
+  {
+    "id": "poi-transit-1",
+    "name": "New Delhi Railway Station (NDLS)",
+    "category": "RailwayStation",
+    "latitude": 28.6428,
+    "longitude": 77.2205,
+    "address": "Bhavbhuti Marg, Ratan Lal Market, Kamla Market, Ajmeri Gate, New Delhi",
+    "tags": { "station_code": "NDLS", "platforms": "16", "metro_connected": "yes" }
+  },
+  {
+    "id": "poi-transit-2",
+    "name": "Hazrat Nizamuddin Railway Station",
+    "category": "RailwayStation",
+    "latitude": 28.5885,
+    "longitude": 77.2530,
+    "address": "Nizamuddin East, New Delhi",
+    "tags": { "station_code": "NZM", "platforms": "7" }
+  },
+  {
+    "id": "poi-transit-3",
+    "name": "Anand Vihar Railway Terminal",
+    "category": "RailwayStation",
+    "latitude": 28.6505,
+    "longitude": 77.3150,
+    "address": "Anand Vihar, East Delhi",
+    "tags": { "station_code": "ANVT", "metro_connected": "yes" }
+  },
+  {
+    "id": "poi-transit-4",
+    "name": "Rajiv Chowk Metro Station",
+    "category": "RailwayStation",
+    "latitude": 28.6328,
+    "longitude": 77.2195,
+    "address": "Central Park, Connaught Place, New Delhi",
+    "tags": { "type": "metro_interchange", "lines": "Blue Line, Yellow Line" }
+  },
+  {
+    "id": "poi-transit-5",
+    "name": "Old Delhi Railway Station (DLI)",
+    "category": "RailwayStation",
+    "latitude": 28.6615,
+    "longitude": 77.2280,
+    "address": "Chandni Chowk, Old Delhi",
+    "tags": { "station_code": "DLI", "platforms": "16" }
+  },
+  {
+    "id": "poi-air-1",
+    "name": "Indira Gandhi International Airport — Terminal 3",
+    "category": "Airport",
+    "latitude": 28.5562,
+    "longitude": 77.0860,
+    "address": "Palam, New Delhi",
+    "phone": "+91-124-4797300",
+    "tags": { "iata": "DEL", "type": "international_domestic_terminal" }
+  },
+  {
+    "id": "poi-air-2",
+    "name": "Indira Gandhi International Airport — Terminal 1",
+    "category": "Airport",
+    "latitude": 28.5685,
+    "longitude": 77.1120,
+    "address": "Domestic Departures, Palam, New Delhi",
+    "tags": { "iata": "DEL", "type": "domestic_low_cost" }
+  },
+  {
+    "id": "poi-air-3",
+    "name": "Indira Gandhi International Airport — Terminal 2",
+    "category": "Airport",
+    "latitude": 28.5580,
+    "longitude": 77.0950,
+    "address": "Terminal 2, IGI Airport, New Delhi",
+    "tags": { "iata": "DEL", "type": "domestic_terminal" }
+  },
+  {
+    "id": "poi-land-1",
+    "name": "India Gate & Kartavya Path",
+    "category": "Landmark",
+    "latitude": 28.6129,
+    "longitude": 77.2295,
+    "address": "Rajpath / Kartavya Path, India Gate, New Delhi",
+    "tags": { "tourism": "monument", "historic": "yes" }
+  },
+  {
+    "id": "poi-land-2",
+    "name": "Rashtrapati Bhavan (President's House)",
+    "category": "Landmark",
+    "latitude": 28.6143,
+    "longitude": 77.1995,
+    "address": "Rashtrapati Bhawan, President's Estate, New Delhi",
+    "tags": { "tourism": "heritage_residence", "historic": "yes" }
+  },
+  {
+    "id": "poi-land-3",
+    "name": "Red Fort (Lal Qila)",
+    "category": "Landmark",
+    "latitude": 28.6562,
+    "longitude": 77.2410,
+    "address": "Netaji Subhash Marg, Lal Qila, Chandni Chowk, New Delhi",
+    "tags": { "unesco_world_heritage": "yes", "historic": "mughal" }
+  },
+  {
+    "id": "poi-land-4",
+    "name": "Qutub Minar & Complex",
+    "category": "Landmark",
+    "latitude": 28.5244,
+    "longitude": 77.1855,
+    "address": "Seth Sarai, Mehrauli, New Delhi",
+    "tags": { "unesco_world_heritage": "yes", "historic": "minaret" }
+  },
+  {
+    "id": "poi-land-5",
+    "name": "Lotus Temple (Bahá'í House of Worship)",
+    "category": "Landmark",
+    "latitude": 28.5535,
+    "longitude": 77.2588,
+    "address": "Lotus Temple Road, Bahapur, Kalkaji, New Delhi",
+    "tags": { "tourism": "worship", "architecture": "lotus" }
+  },
+  {
+    "id": "poi-land-6",
+    "name": "Swaminarayan Akshardham Temple",
+    "category": "Landmark",
+    "latitude": 28.6127,
+    "longitude": 77.2773,
+    "address": "NH 24, Pramukh Swami Maharaj Marg, New Delhi",
+    "tags": { "tourism": "temple_complex", "historic": "cultural" }
+  },
+  {
+    "id": "poi-land-7",
+    "name": "Humayun's Tomb",
+    "category": "Landmark",
+    "latitude": 28.5933,
+    "longitude": 77.2507,
+    "address": "Mathura Road, Opposite Dargah Nizamuddin, New Delhi",
+    "tags": { "unesco_world_heritage": "yes", "historic": "mughal_tomb" }
+  },
+  {
+    "id": "poi-land-8",
+    "name": "Jantar Mantar",
+    "category": "Landmark",
+    "latitude": 28.6271,
+    "longitude": 77.2166,
+    "address": "Sansad Marg, Connaught Place, New Delhi",
+    "tags": { "unesco_world_heritage": "yes", "historic": "astronomical_observatory" }
+  },
+  {
+    "id": "poi-land-9",
+    "name": "National War Memorial",
+    "category": "Landmark",
+    "latitude": 28.6118,
+    "longitude": 77.2305,
+    "address": "C-Hexagon, India Gate, New Delhi",
+    "tags": { "tourism": "memorial", "historic": "yes" }
+  },
+  {
+    "id": "poi-land-10",
+    "name": "National Museum New Delhi",
+    "category": "Landmark",
+    "latitude": 28.6117,
+    "longitude": 77.2195,
+    "address": "Janpath, Near Rajpath, New Delhi",
+    "tags": { "tourism": "museum", "historic": "yes" }
+  }
+]

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NavIC Navigation</string>
+    <string name="channel_name">NavIC Turn-by-Turn Guidance</string>
+    <string name="channel_desc">Active background vehicle tracking and navigation</string>
+</resources>

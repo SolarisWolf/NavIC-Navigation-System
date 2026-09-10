@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "description": "NavIC-Enabled Smart Offline Navigation System",
+  "type": "module",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "android:assets": "node tools/copy-android-assets.js",
+    "android:build": "npm run build --workspace=@navic/web && node tools/copy-android-assets.js && cd apps/android && .\\gradlew.bat assembleDebug",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
