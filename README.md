@@ -95,7 +95,7 @@ npm run dev --workspace=@navic/web
 | 3 | Local Base Map Integration | ✅ Complete |
 | 4 | IMU Simulator | ✅ Complete |
 | 5 | Extended Kalman Filter / Sensor Fusion | ✅ Complete |
-| 6 | GNSS Position Engine | ⏳ In Progress |
+| 6 | GNSS Position Engine | ✅ Complete |
 | 7 | Offline POI Database | ⏳ Pending |
 | 8 | Offline Routing Engine | ⏳ Pending |
 | 9 | Navigation Engine | ⏳ Pending |
@@ -118,6 +118,7 @@ npm run dev --workspace=@navic/web
 - **Phase 3**: Offline MBTiles tile server and Leaflet map rendering with vehicle tracking.
 - **Phase 4**: 50 Hz IMU Simulator (accelerometer, gyroscope, magnetometer) with real-time 3D attitude visualization.
 - **Phase 5**: 7-state Extended Kalman Filter (EKF) sensor fusion running at 50 Hz with continuous Dead Reckoning during GNSS outages (< 0.1 ms latency).
+- **Phase 6**: GNSS Position Engine with line-of-sight satellite geometry Dilution of Precision (HDOP, VDOP, PDOP, GDOP), kinematic outlier rejection, exponential coordinate smoothing, stationary bearing lock, and NavIC-assisted fix identification.
 
 ## ⚠️ Important Notes
 
