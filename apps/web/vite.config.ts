@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import Database from 'better-sqlite3';
 
 export default defineConfig({
+  base: './',
   plugins: [{
     name: 'vite-plugin-mbtiles',
     configureServer(server) {
