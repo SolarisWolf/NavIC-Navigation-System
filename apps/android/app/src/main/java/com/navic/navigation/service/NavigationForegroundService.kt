@@ -113,12 +113,23 @@ class NavigationForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val stopIntent = Intent(this, NavigationForegroundService::class.java).apply {
+            action = ACTION_STOP
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(maneuver)
             .setContentText(stats)
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Navigation", stopPendingIntent)
             .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

@@ -545,3 +545,20 @@ input:focus, select:focus, textarea:focus {
     padding: var(--space-3);
   }
 }
+
+/* ─── Power Saver Mode Optimizations (Phase 17) ──────────────────────────── */
+body.power-saver-active * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition-duration: 0ms !important;
+}
+
+body.power-saver-active .status-bar__sim-badge {
+  animation: none !important;
+}
+
+body.power-saver-active .card {
+  backdrop-filter: none !important;
+  background: #111827 !important;
+}
+

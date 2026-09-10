@@ -25,6 +25,7 @@ import { poiService } from '../services/poi-service.js';
 import { routingService } from '../services/routing-service.js';
 import { navigationService } from '../services/navigation-service.js';
 import { voiceGuidanceService } from '../services/voice-guidance-service.js';
+import { powerService } from '../services/power-service.js';
 import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
 
 let map: L.Map | null = null;
@@ -745,9 +746,21 @@ function updateFollowBtn(): void {
 
 let lastDrState = false;
 let lastPanTime = 0;
+let lastRenderTime = 0;
 
 function updateMapState(estimate: FusedPositionEstimate): void {
   if (!map) return;
+
+  // Power optimization: throttle map marker redraw rate according to vehicle dynamics & power saver profile
+  const fpsLimit = powerService.getStatus().mapFpsLimit;
+  if (fpsLimit < 60) {
+    const minIntervalMs = 1000 / fpsLimit;
+    const now = performance.now();
+    if (now - lastRenderTime < minIntervalMs) {
+      return; // Skip redraw to conserve GPU/CPU and battery
+    }
+    lastRenderTime = now;
+  }
 
   const badge = document.getElementById('map-fix-badge');
   const isDr = estimate.isDeadReckoning;

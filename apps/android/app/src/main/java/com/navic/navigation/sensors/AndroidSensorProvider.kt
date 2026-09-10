@@ -34,6 +34,7 @@ class AndroidSensorProvider(
     private val magnetometer: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
     private var isRunning = false
+    private var currentSamplingPeriodUs = SENSOR_SAMPLING_PERIOD_US
 
     fun start(): Boolean {
         if (isRunning) return true
@@ -42,23 +43,40 @@ class AndroidSensorProvider(
         var registeredAny = false
 
         accelerometer?.let {
-            val registered = sm.registerListener(this, it, SENSOR_SAMPLING_PERIOD_US)
+            val registered = sm.registerListener(this, it, currentSamplingPeriodUs)
             if (registered) registeredAny = true
         }
 
         gyroscope?.let {
-            val registered = sm.registerListener(this, it, SENSOR_SAMPLING_PERIOD_US)
+            val registered = sm.registerListener(this, it, currentSamplingPeriodUs)
             if (registered) registeredAny = true
         }
 
         magnetometer?.let {
-            val registered = sm.registerListener(this, it, SENSOR_SAMPLING_PERIOD_US)
+            val registered = sm.registerListener(this, it, currentSamplingPeriodUs)
             if (registered) registeredAny = true
         }
 
         isRunning = registeredAny
-        Log.i(TAG, "Native IMU sensors started (isRunning=$isRunning, accel=${accelerometer != null}, gyro=${gyroscope != null})")
+        Log.i(TAG, "Native IMU sensors started (isRunning=$isRunning, rateUs=$currentSamplingPeriodUs)")
         return isRunning
+    }
+
+    /**
+     * Dynamically change sensor sampling rate without losing tracking state.
+     * Useful for adaptive power throttling (e.g. 50 Hz in motion vs 10 Hz stationary).
+     */
+    fun setSamplingPeriodUs(periodUs: Int) {
+        if (periodUs <= 0 || periodUs == currentSamplingPeriodUs) return
+        currentSamplingPeriodUs = periodUs
+        if (isRunning) {
+            val sm = sensorManager ?: return
+            sm.unregisterListener(this)
+            accelerometer?.let { sm.registerListener(this, it, currentSamplingPeriodUs) }
+            gyroscope?.let { sm.registerListener(this, it, currentSamplingPeriodUs) }
+            magnetometer?.let { sm.registerListener(this, it, currentSamplingPeriodUs) }
+            Log.i(TAG, "Sensor sampling period dynamically updated to ${currentSamplingPeriodUs}us (~${1_000_000 / currentSamplingPeriodUs}Hz)")
+        }
     }
 
     fun stop() {

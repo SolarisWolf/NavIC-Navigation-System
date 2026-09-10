@@ -5,10 +5,11 @@
  * Subscribes to GNSS service for status updates and dynamic source switching.
  */
 
-import { DEFAULT_CONFIG, FixType, type NavICSignalReport } from '@navic/shared-models';
+import { DEFAULT_CONFIG, FixType, type NavICSignalReport, type PowerOptimizationStatus } from '@navic/shared-models';
 import { qs, formatTime } from '../utils/dom.js';
 import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { offlineService, OfflineStatus } from '../services/offline-service.js';
+import { powerService } from '../services/power-service.js';
 
 export class StatusBar {
   private container: HTMLElement;
@@ -17,6 +18,7 @@ export class StatusBar {
   private unsubscribeOffline: (() => void) | null = null;
   private unsubscribeSource: (() => void) | null = null;
   private unsubscribeNavIC: (() => void) | null = null;
+  private unsubscribePower: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -41,6 +43,11 @@ export class StatusBar {
     // Subscribe to NavIC constellation report updates
     this.unsubscribeNavIC = gnssService.subscribeNavIC((report) => {
       this.updateNavICIndicator(report);
+    });
+
+    // Subscribe to Battery & Power Optimization updates
+    this.unsubscribePower = powerService.subscribe((status) => {
+      this.updateBatteryIndicator(status);
     });
   }
 
@@ -74,6 +81,10 @@ export class StatusBar {
           <span class="status-bar__dot status-bar__dot--active" id="offline-dot"></span>
           <span id="offline-text">Offline Ready</span>
         </div>
+        <div class="status-bar__indicator" id="battery-indicator" style="cursor: pointer;" title="Battery & Power Profile. Click to configure.">
+          <span class="status-bar__dot status-bar__dot--active" id="battery-dot"></span>
+          <span id="battery-text">🔋 85%</span>
+        </div>
       </div>
 
       <div class="status-bar__right">
@@ -92,6 +103,12 @@ export class StatusBar {
     const offlineInd = qs('#offline-indicator', this.container);
     offlineInd?.addEventListener('click', () => {
       window.location.hash = '#/diagnostics';
+    });
+
+    // Click on battery indicator navigates to settings power configuration
+    const batteryInd = qs('#battery-indicator', this.container);
+    batteryInd?.addEventListener('click', () => {
+      window.location.hash = '#/settings';
     });
 
     // Click on source badge navigates to settings hardware configuration
@@ -188,6 +205,27 @@ export class StatusBar {
     }
   }
 
+  private updateBatteryIndicator(status: PowerOptimizationStatus): void {
+    const dot = qs('#battery-dot', this.container);
+    const text = qs('#battery-text', this.container);
+    if (!dot || !text) return;
+
+    const b = status.battery;
+    const chargeIcon = b.isCharging ? '⚡' : '';
+    const saverIcon = status.isPowerSaverActive ? '🍃' : '';
+
+    if (b.levelPercent <= 15 && !b.isCharging) {
+      dot.className = 'status-bar__dot status-bar__dot--error';
+    } else if (status.isPowerSaverActive || (b.levelPercent <= 25 && !b.isCharging)) {
+      dot.className = 'status-bar__dot status-bar__dot--warning';
+    } else {
+      dot.className = 'status-bar__dot status-bar__dot--active';
+    }
+
+    text.textContent = `🔋 ${b.levelPercent}%${chargeIcon} ${saverIcon}`.trim();
+    text.title = `Battery: ${b.levelPercent}% (${b.isCharging ? 'Charging' : 'Discharging'}) | Mode: ${status.profileMode} | IMU: ${status.activeImuRateHz}Hz`;
+  }
+
   private startClock(): void {
     this.clockInterval = window.setInterval(() => {
       const clockEl = qs('#status-clock');
@@ -213,6 +251,10 @@ export class StatusBar {
     if (this.unsubscribeNavIC) {
       this.unsubscribeNavIC();
     }
+    if (this.unsubscribePower) {
+      this.unsubscribePower();
+    }
   }
 }
+
 

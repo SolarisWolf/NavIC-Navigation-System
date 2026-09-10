@@ -31,6 +31,7 @@ import {
 import { fusionService } from './fusion-service.js';
 import { routingService } from './routing-service.js';
 import { voiceGuidanceService } from './voice-guidance-service.js';
+import { powerService } from './power-service.js';
 
 class NavigationServiceImpl {
   private engine: NavigationEngine;
@@ -63,6 +64,17 @@ class NavigationServiceImpl {
       // Process voice guidance if actively navigating on route
       if (state.mode === NavigationMode.Active && state.currentPosition) {
         this.voiceGenerator.processNavigationState(state);
+
+        // Update ongoing Android notification and background Web Notification
+        if (state.nextInstruction) {
+          const remainingKm = state.remainingDistance ? (state.remainingDistance / 1000).toFixed(1) : '0.0';
+          const etaMins = state.remainingTime ? Math.ceil(state.remainingTime / 60) : 0;
+          const stats = `${remainingKm} km remaining • ETA ${etaMins} min`;
+          powerService.updateGuidanceNotification(
+            state.nextInstruction.description || 'Continue on route',
+            stats
+          );
+        }
       }
 
       for (const listener of this.stateListeners) {
@@ -209,6 +221,9 @@ class NavigationServiceImpl {
     const firstRoad = targetRoute.instructions[0]?.roadName;
     this.voiceGenerator.notifyNavigationStarted(destName, firstRoad);
 
+    // Acquire wake lock & initialize foreground notification
+    powerService.onNavigationStarted(destName);
+
     return state;
   }
 
@@ -219,6 +234,7 @@ class NavigationServiceImpl {
     this.reroutingManager.reset();
     this.voiceGenerator.reset();
     voiceGuidanceService.cancel();
+    powerService.onNavigationStopped();
     return this.engine.stopNavigation();
   }
 

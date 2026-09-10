@@ -62,6 +62,27 @@ export class IMUSimulator implements IMUProvider {
     this.logger.info(`Started at ${this.sampleRateHz}Hz`);
   }
 
+  /**
+   * Dynamically adjust the IMU sampling frequency without stopping the simulator.
+   * Useful for adaptive power management (e.g. throttling to 10 Hz when stationary).
+   */
+  public setFrequency(frequencyHz: number): void {
+    if (this.sampleRateHz === frequencyHz) return;
+    this.sampleRateHz = frequencyHz;
+    if (this.active) {
+      if (this.timer) {
+        clearInterval(this.timer);
+      }
+      const intervalMs = 1000 / this.sampleRateHz;
+      this.timer = setInterval(() => this.tick(), intervalMs);
+      this.logger.info(`Frequency throttled to ${this.sampleRateHz}Hz`);
+    }
+  }
+
+  public getFrequency(): number {
+    return this.sampleRateHz;
+  }
+
   public stop(): void {
     if (!this.active) return;
     this.active = false;

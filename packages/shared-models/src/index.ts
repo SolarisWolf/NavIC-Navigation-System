@@ -122,3 +122,13 @@ export {
   formatDistance,
   formatDuration,
 } from './utils';
+
+// ─── Power & Battery Optimization Types ──────────────────────────────────────
+export {
+  PowerProfileMode,
+  VehicleDynamicsState,
+  type BatteryTelemetry,
+  type PowerOptimizationStatus,
+  type PowerStatusListener,
+} from './power.types';
+

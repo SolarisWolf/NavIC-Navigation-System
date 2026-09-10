@@ -13,6 +13,7 @@ import {
   type AccelerometerReading,
   type GyroscopeReading,
   type MagnetometerReading,
+  type BatteryTelemetry,
 } from '@navic/shared-models';
 
 export interface AndroidDeviceInfo {
@@ -49,6 +50,8 @@ declare global {
       isHardwareSensorsActive(): boolean;
       getHardwareSensorStatus(): string;
       getNavICConstellationReport(): string;
+      getBatteryStatus(): string;
+      setSensorSamplingRate(rateHz: number): void;
       log(level: string, tag: string, message: string): void;
     };
   }
@@ -202,6 +205,37 @@ class AndroidBridgeServiceImpl {
     };
     window.addEventListener('navic-hardware-report', handler);
     return () => window.removeEventListener('navic-hardware-report', handler);
+  }
+
+  public getBatteryStatus(): BatteryTelemetry | null {
+    if (this.isNativeAndroid && window.NavICNative) {
+      try {
+        const raw = window.NavICNative.getBatteryStatus();
+        if (raw && raw !== '{}') {
+          return JSON.parse(raw);
+        }
+      } catch (e) {
+        this.logger.warn('Failed to parse native battery status:', e);
+      }
+    }
+    return null;
+  }
+
+  public onBatteryChanged(callback: (battery: BatteryTelemetry) => void): () => void {
+    const handler = (evt: Event) => {
+      const customEvt = evt as CustomEvent<BatteryTelemetry>;
+      if (customEvt.detail) {
+        callback(customEvt.detail);
+      }
+    };
+    window.addEventListener('navic-hardware-battery', handler);
+    return () => window.removeEventListener('navic-hardware-battery', handler);
+  }
+
+  public setSensorSamplingRate(rateHz: number): void {
+    if (this.isNativeAndroid && window.NavICNative) {
+      window.NavICNative.setSensorSamplingRate(rateHz);
+    }
   }
 
   public stopGuidance(): void {

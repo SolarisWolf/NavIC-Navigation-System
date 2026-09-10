@@ -16,3 +16,7 @@ export * from './simulator/imu-simulator.js';
 
 // High-level Sensor Fusion Engine
 export * from './sensor-fusion-engine.js';
+
+// Power & Battery Optimization Engine
+export * from './engine/power-optimizer.js';
+

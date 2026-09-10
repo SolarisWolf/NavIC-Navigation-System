@@ -6,17 +6,26 @@
  * Hardware Sensor Source selection (Simulation vs Live Laptop GPS vs Native Android Hardware vs USB NMEA).
  */
 
-import { DEFAULT_CONFIG, LogLevel } from '@navic/shared-models';
+import { DEFAULT_CONFIG, LogLevel, PowerProfileMode, VehicleDynamicsState } from '@navic/shared-models';
 import { voiceGuidanceService } from '../services/voice-guidance-service.js';
 import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { androidBridgeService } from '../services/android-bridge-service.js';
+import { powerService } from '../services/power-service.js';
+
+let unsubscribePowerSettings: (() => void) | null = null;
 
 export function renderSettingsScreen(container: HTMLElement): void {
+  if (unsubscribePowerSettings) {
+    unsubscribePowerSettings();
+    unsubscribePowerSettings = null;
+  }
+
   const config = DEFAULT_CONFIG;
   const voiceSettings = voiceGuidanceService.getSettings();
   const availableVoices = voiceGuidanceService.getVoices();
   const currentSourceMode = gnssService.getSourceMode();
   const androidInfo = androidBridgeService.getDeviceInfo();
+  const powerStatus = powerService.getStatus();
 
   container.innerHTML = `
     <div class="settings-screen screen">
@@ -145,6 +154,93 @@ export function renderSettingsScreen(container: HTMLElement): void {
             🔊 Test Voice Prompt
           </button>
           <span class="settings-test-status" id="voice-test-status"></span>
+        </div>
+      </div>
+
+      <!-- Battery & Power Optimization (Phase 17) -->
+      <div class="settings-group settings-group--interactive" id="power-settings-group">
+        <div class="settings-group__header">
+          <span class="settings-group__header-icon">⚡</span>
+          Battery & Power Optimization
+        </div>
+
+        <!-- Live Battery Telemetry Card -->
+        <div style="background: var(--bg-card, #1e293b); border: 1px solid var(--border-color, #334155); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.5rem;" id="p-battery-icon">${powerStatus.battery.isCharging ? '⚡' : '🔋'}</span>
+              <div>
+                <span style="font-weight:700; font-size:1.2rem; color:var(--text-primary, #f8fafc);" id="p-battery-level">${powerStatus.battery.levelPercent}%</span>
+                <span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8); margin-left:6px;" id="p-battery-status">(${powerStatus.battery.isCharging ? 'Charging' : 'Discharging'})</span>
+              </div>
+            </div>
+            <span class="status-badge ${powerStatus.isPowerSaverActive ? 'status-badge--warning' : 'status-badge--active'}" id="p-profile-badge">
+              ${powerStatus.profileMode} (${powerStatus.activeImuRateHz} Hz)
+            </span>
+          </div>
+
+          <!-- Battery level bar -->
+          <div style="background: rgba(255,255,255,0.1); border-radius: 9999px; height: 8px; overflow: hidden; margin-bottom: 12px;">
+            <div id="p-battery-fill" style="background: ${powerStatus.isPowerSaverActive ? 'var(--color-warning, #f59e0b)' : 'var(--color-navic, #ff9933)'}; height: 100%; width: ${powerStatus.battery.levelPercent}%; transition: width 300ms ease;"></div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size:0.85rem;">
+            <div style="color:var(--text-secondary, #94a3b8)">Estimated Runtime: <strong style="color:var(--text-primary, #f8fafc)" id="p-battery-hours">${powerStatus.battery.estimatedHoursRemaining} hrs</strong></div>
+            <div style="color:var(--text-secondary, #94a3b8)">Temperature: <strong style="color:var(--text-primary, #f8fafc)" id="p-battery-temp">${powerStatus.battery.temperatureCelsius ?? 31.5} °C</strong></div>
+            <div style="color:var(--text-secondary, #94a3b8)">Voltage: <strong style="color:var(--text-primary, #f8fafc)" id="p-battery-volt">${powerStatus.battery.voltageMv ?? 3950} mV</strong></div>
+            <div style="color:var(--text-secondary, #94a3b8)">Vehicle Dynamics: <strong style="color:var(--text-primary, #f8fafc)" id="p-dynamics-state">${powerStatus.vehicleDynamics === VehicleDynamicsState.STATIONARY ? '🛑 STATIONARY (10 Hz)' : '🚗 IN MOTION (50 Hz)'}</strong></div>
+          </div>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Keep Screen On (WakeLock)</span>
+            <span class="settings-interactive-row__desc">Keep screen illuminated continuously during active turn-by-turn navigation</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-wakelock" ${powerStatus.isWakeLockActive ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Adaptive Sensor Throttling</span>
+            <span class="settings-interactive-row__desc">Throttle IMU to 10 Hz & map to 15 FPS when vehicle is stopped for > 8 seconds</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-adaptive-throttle" ${powerStatus.isAdaptiveThrottlingEnabled ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Power Saver Mode</span>
+            <span class="settings-interactive-row__desc">Cap IMU to 25 Hz, limit map to 30 FPS, and minimize background rendering</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-power-saver" ${powerStatus.isPowerSaverActive ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Auto-Enable Threshold</span>
+            <span class="settings-interactive-row__desc" id="threshold-val-display">Auto-enable power saver at ${powerStatus.autoPowerSaverThreshold}% battery</span>
+          </div>
+          <input type="range" id="setting-power-threshold" class="settings-slider" min="10" max="40" step="5" value="${powerStatus.autoPowerSaverThreshold}">
+        </div>
+
+        <div class="settings-test-action">
+          <button class="btn btn--secondary" id="btn-simulate-battery-drop">
+            🔋 Simulate -15% Battery
+          </button>
+          <button class="btn btn--secondary" id="btn-toggle-charging">
+            ⚡ Toggle Charger Plugged
+          </button>
+          <span class="settings-test-status" id="power-test-status"></span>
         </div>
       </div>
 
@@ -323,6 +419,94 @@ export function renderSettingsScreen(container: HTMLElement): void {
       }, 4000);
     }
     voiceGuidanceService.testVoice('In 200 meters, turn right onto Barakhamba Road.');
+  });
+
+  // Bind battery & power optimization handlers
+  const wakelockToggle = document.getElementById('setting-wakelock') as HTMLInputElement | null;
+  const adaptiveThrottleToggle = document.getElementById('setting-adaptive-throttle') as HTMLInputElement | null;
+  const powerSaverToggle = document.getElementById('setting-power-saver') as HTMLInputElement | null;
+  const powerThresholdSlider = document.getElementById('setting-power-threshold') as HTMLInputElement | null;
+  const thresholdDisplay = document.getElementById('threshold-val-display');
+  const btnSimulateDrop = document.getElementById('btn-simulate-battery-drop');
+  const btnToggleCharging = document.getElementById('btn-toggle-charging');
+  const powerTestStatus = document.getElementById('power-test-status');
+
+  wakelockToggle?.addEventListener('change', async () => {
+    if (wakelockToggle.checked) {
+      await powerService.requestWakeLock();
+    } else {
+      await powerService.releaseWakeLock();
+    }
+  });
+
+  adaptiveThrottleToggle?.addEventListener('change', () => {
+    powerService.setAdaptiveThrottlingEnabled(adaptiveThrottleToggle.checked);
+  });
+
+  powerSaverToggle?.addEventListener('change', () => {
+    powerService.setPowerSaverMode(powerSaverToggle.checked);
+  });
+
+  powerThresholdSlider?.addEventListener('input', () => {
+    const val = parseInt(powerThresholdSlider.value, 10);
+    powerService.setAutoPowerSaverThreshold(val);
+    if (thresholdDisplay) thresholdDisplay.textContent = `Auto-enable power saver at ${val}% battery`;
+  });
+
+  btnSimulateDrop?.addEventListener('click', () => {
+    const current = powerService.getStatus().battery.levelPercent;
+    const nextLevel = Math.max(5, current - 15);
+    (powerService as any).optimizer.updateBattery({ levelPercent: nextLevel, isCharging: false });
+    if (powerTestStatus) {
+      powerTestStatus.textContent = `Simulated battery drop to ${nextLevel}%`;
+      setTimeout(() => { if (powerTestStatus) powerTestStatus.textContent = ''; }, 3000);
+    }
+  });
+
+  btnToggleCharging?.addEventListener('click', () => {
+    const isCharging = !powerService.getStatus().battery.isCharging;
+    (powerService as any).optimizer.updateBattery({ isCharging, chargingSource: isCharging ? 'USB' : 'UNKNOWN' });
+    if (powerTestStatus) {
+      powerTestStatus.textContent = isCharging ? 'Charger connected (USB)' : 'Charger disconnected';
+      setTimeout(() => { if (powerTestStatus) powerTestStatus.textContent = ''; }, 3000);
+    }
+  });
+
+  // Subscribe to live power status updates to update the Settings screen card
+  unsubscribePowerSettings = powerService.subscribe((status) => {
+    const iconEl = document.getElementById('p-battery-icon');
+    const levelEl = document.getElementById('p-battery-level');
+    const statusEl = document.getElementById('p-battery-status');
+    const badgeEl = document.getElementById('p-profile-badge');
+    const fillEl = document.getElementById('p-battery-fill');
+    const hoursEl = document.getElementById('p-battery-hours');
+    const tempEl = document.getElementById('p-battery-temp');
+    const voltEl = document.getElementById('p-battery-volt');
+    const dynEl = document.getElementById('p-dynamics-state');
+
+    if (levelEl) levelEl.textContent = `${status.battery.levelPercent}%`;
+    if (iconEl) iconEl.textContent = status.battery.isCharging ? '⚡' : '🔋';
+    if (statusEl) statusEl.textContent = `(${status.battery.isCharging ? 'Charging' : 'Discharging'})`;
+    if (fillEl) {
+      fillEl.style.width = `${status.battery.levelPercent}%`;
+      fillEl.style.background = status.isPowerSaverActive ? 'var(--color-warning, #f59e0b)' : 'var(--color-navic, #ff9933)';
+    }
+    if (badgeEl) {
+      badgeEl.textContent = `${status.profileMode} (${status.activeImuRateHz} Hz)`;
+      badgeEl.className = `status-badge ${status.isPowerSaverActive ? 'status-badge--warning' : 'status-badge--active'}`;
+    }
+    if (hoursEl) hoursEl.textContent = `${status.battery.estimatedHoursRemaining} hrs`;
+    if (tempEl) tempEl.textContent = `${status.battery.temperatureCelsius ?? 31.5} °C`;
+    if (voltEl) voltEl.textContent = `${status.battery.voltageMv ?? 3950} mV`;
+    if (dynEl) {
+      dynEl.textContent = status.vehicleDynamics === VehicleDynamicsState.STATIONARY
+        ? '🛑 STATIONARY (10 Hz)'
+        : '🚗 IN MOTION (50 Hz)';
+    }
+
+    if (powerSaverToggle && powerSaverToggle.checked !== status.isPowerSaverActive) {
+      powerSaverToggle.checked = status.isPowerSaverActive;
+    }
   });
 }
 

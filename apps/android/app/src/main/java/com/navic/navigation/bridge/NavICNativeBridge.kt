@@ -7,6 +7,7 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import com.navic.navigation.sensors.AndroidLocationProvider
 import com.navic.navigation.sensors.AndroidSensorProvider
+import com.navic.navigation.sensors.AndroidBatteryMonitor
 import org.json.JSONObject
 
 /**
@@ -55,6 +56,18 @@ class NavICNativeBridge(
         }
     )
 
+    private val batteryMonitor = AndroidBatteryMonitor(
+        context = context,
+        onBatteryUpdate = { jsonStr ->
+            dispatchToWeb("navic-hardware-battery", jsonStr)
+        }
+    )
+
+    init {
+        // Start battery monitoring immediately so web client has telemetry on launch
+        batteryMonitor.start()
+    }
+
     private fun dispatchToWeb(eventType: String, jsonDetail: String) {
         val script = "window.dispatchEvent(new CustomEvent('$eventType', { detail: $jsonDetail }));"
         onDispatchJs(script)
@@ -68,6 +81,7 @@ class NavICNativeBridge(
         Log.i(TAG, "startHardwareSensors called")
         val locStarted = locationProvider.start()
         val sensorsStarted = sensorProvider.start()
+        batteryMonitor.start()
         isHardwareActive = locStarted || sensorsStarted
         return isHardwareActive
     }
@@ -97,6 +111,23 @@ class NavICNativeBridge(
     @JavascriptInterface
     fun getHardwareSensorStatus(): String {
         return sensorProvider.getStatusJson()
+    }
+
+    /**
+     * Dynamically changes IMU sensor sampling frequency (e.g. 50 Hz in motion vs 10 Hz stationary).
+     */
+    @JavascriptInterface
+    fun setSensorSamplingRate(rateHz: Int) {
+        val periodUs = if (rateHz > 0) (1_000_000 / rateHz) else 20_000
+        sensorProvider.setSamplingPeriodUs(periodUs)
+    }
+
+    /**
+     * Returns the latest battery and power telemetry JSON.
+     */
+    @JavascriptInterface
+    fun getBatteryStatus(): String {
+        return batteryMonitor.getLatestBatteryStatus()
     }
 
     /**
