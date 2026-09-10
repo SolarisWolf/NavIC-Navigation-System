@@ -5,7 +5,7 @@
  * Subscribes to GNSS service for status updates and dynamic source switching.
  */
 
-import { DEFAULT_CONFIG, FixType } from '@navic/shared-models';
+import { DEFAULT_CONFIG, FixType, type NavICSignalReport } from '@navic/shared-models';
 import { qs, formatTime } from '../utils/dom.js';
 import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { offlineService, OfflineStatus } from '../services/offline-service.js';
@@ -16,6 +16,7 @@ export class StatusBar {
   private unsubscribeGNSS: (() => void) | null = null;
   private unsubscribeOffline: (() => void) | null = null;
   private unsubscribeSource: (() => void) | null = null;
+  private unsubscribeNavIC: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -36,6 +37,11 @@ export class StatusBar {
     this.unsubscribeSource = gnssService.onSourceModeChange((mode) => {
       this.updateSourceBadge(mode);
     });
+
+    // Subscribe to NavIC constellation report updates
+    this.unsubscribeNavIC = gnssService.subscribeNavIC((report) => {
+      this.updateNavICIndicator(report);
+    });
   }
 
   private render(): void {
@@ -51,6 +57,10 @@ export class StatusBar {
         <div class="status-bar__indicator" id="gnss-indicator">
           <span class="status-bar__dot status-bar__dot--error" id="gnss-dot"></span>
           <span id="gnss-text">GNSS: No Fix</span>
+        </div>
+        <div class="status-bar__indicator" id="navic-indicator" style="cursor: pointer;" title="Click to view NavIC Constellation telemetry">
+          <span class="status-bar__dot" id="navic-dot" style="background:var(--color-navic, #ff9933); opacity: 0.5;"></span>
+          <span id="navic-text">NavIC: --</span>
         </div>
         <div class="status-bar__indicator" id="ekf-indicator">
           <span class="status-bar__dot"></span>
@@ -71,6 +81,12 @@ export class StatusBar {
         <span class="status-bar__clock" id="status-clock">${formatTime()}</span>
       </div>
     `;
+
+    // Click on NavIC indicator navigates to satellites screen
+    const navicInd = qs('#navic-indicator', this.container);
+    navicInd?.addEventListener('click', () => {
+      window.location.hash = '#/satellites';
+    });
 
     // Click on offline indicator navigates to diagnostics
     const offlineInd = qs('#offline-indicator', this.container);
@@ -146,6 +162,32 @@ export class StatusBar {
     }
   }
 
+  private updateNavICIndicator(report: NavICSignalReport): void {
+    const dot = qs('#navic-dot', this.container);
+    const text = qs('#navic-text', this.container);
+    if (!dot || !text) return;
+
+    if (report.lockStatus === 'Full Lock') {
+      dot.className = 'status-bar__dot status-bar__dot--navic';
+      dot.style.background = 'var(--color-navic, #ff9933)';
+      dot.style.boxShadow = '0 0 8px rgba(255, 153, 51, 0.6)';
+      dot.style.opacity = '1';
+      text.textContent = `NavIC: ${report.usedInFix}/${report.totalVisible} SVs 🇮🇳`;
+    } else if (report.lockStatus === 'Marginal Lock') {
+      dot.className = 'status-bar__dot status-bar__dot--warning';
+      dot.style.background = '';
+      dot.style.boxShadow = '';
+      dot.style.opacity = '1';
+      text.textContent = `NavIC: ${report.totalVisible} SVs (Marginal)`;
+    } else {
+      dot.className = 'status-bar__dot status-bar__dot--idle';
+      dot.style.background = 'var(--color-navic, #ff9933)';
+      dot.style.boxShadow = '';
+      dot.style.opacity = '0.4';
+      text.textContent = 'NavIC: No Signal';
+    }
+  }
+
   private startClock(): void {
     this.clockInterval = window.setInterval(() => {
       const clockEl = qs('#status-clock');
@@ -168,5 +210,9 @@ export class StatusBar {
     if (this.unsubscribeSource) {
       this.unsubscribeSource();
     }
+    if (this.unsubscribeNavIC) {
+      this.unsubscribeNavIC();
+    }
   }
 }
+

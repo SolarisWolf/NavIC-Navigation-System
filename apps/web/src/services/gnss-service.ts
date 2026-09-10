@@ -6,11 +6,12 @@
  * to all UI subscribers.
  */
 
-import { type GNSSMeasurement, type SatelliteInfo, Constellation, FixType } from '@navic/shared-models';
-import { GNSSSimulator, BrowserGeolocationProvider, SerialNMEAProvider } from '@navic/gnss-core';
+import { type GNSSMeasurement, type SatelliteInfo, type NavICSignalReport, Constellation, FixType } from '@navic/shared-models';
+import { GNSSSimulator, BrowserGeolocationProvider, SerialNMEAProvider, NavICDetector } from '@navic/gnss-core';
 import { androidBridgeService } from './android-bridge-service.js';
 
 export type MeasurementListener = (measurement: GNSSMeasurement) => void;
+export type NavICReportListener = (report: NavICSignalReport) => void;
 
 export enum DataSourceMode {
   Simulation = 'simulation',
@@ -42,7 +43,9 @@ class GNSSServiceImpl {
   private activeMode: DataSourceMode = DataSourceMode.Simulation;
   private listeners: Set<MeasurementListener> = new Set();
   private sourceListeners: Set<SourceModeListener> = new Set();
+  private navicListeners: Set<NavICReportListener> = new Set();
   private _lastMeasurement: GNSSMeasurement | null = null;
+  private _lastNavICReport: NavICSignalReport | null = null;
   private isStarted = false;
 
   constructor() {
@@ -81,6 +84,13 @@ class GNSSServiceImpl {
         this.dispatchMeasurement(m);
       }
     });
+
+    // Route native Android NavIC signal reports
+    androidBridgeService.onNavICReport((report) => {
+      if (this.activeMode === DataSourceMode.AndroidHardware) {
+        this.dispatchNavICReport(report);
+      }
+    });
   }
 
   private dispatchMeasurement(m: GNSSMeasurement): void {
@@ -92,6 +102,38 @@ class GNSSServiceImpl {
         console.error('GNSS listener error:', e);
       }
     }
+
+    // Evaluate NavIC constellation health & signal integrity
+    const report = NavICDetector.analyzeConstellation(
+      m.satellites,
+      m.satellites.filter((s) => s.usedInFix).length
+    );
+    this.dispatchNavICReport(report);
+  }
+
+  private dispatchNavICReport(report: NavICSignalReport): void {
+    this._lastNavICReport = report;
+    for (const listener of this.navicListeners) {
+      try {
+        listener(report);
+      } catch (e) {
+        console.error('NavIC listener error:', e);
+      }
+    }
+  }
+
+  /** Subscribe to NavIC signal & constellation telemetry reports. */
+  subscribeNavIC(listener: NavICReportListener): () => void {
+    this.navicListeners.add(listener);
+    if (this._lastNavICReport) {
+      listener(this._lastNavICReport);
+    }
+    return () => this.navicListeners.delete(listener);
+  }
+
+  /** Get latest NavIC constellation report */
+  get lastNavICReport(): NavICSignalReport | null {
+    return this._lastNavICReport;
   }
 
   /** Get the underlying simulator for scenario and control operations. */

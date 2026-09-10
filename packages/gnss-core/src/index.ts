@@ -10,6 +10,8 @@ export type {
   GNSSMeasurement,
   GNSSStatus,
   SatelliteInfo,
+  NavICSatelliteDetail,
+  NavICSignalReport,
   SatelliteSummary,
   DilutionOfPrecision,
   GNSSPosition,
@@ -50,6 +52,7 @@ export {
   calculateDOP,
   OutlierFilter,
   type OutlierCheckResult,
+  NavICDetector,
 } from './engine/index.js';
 
 // Export real hardware providers

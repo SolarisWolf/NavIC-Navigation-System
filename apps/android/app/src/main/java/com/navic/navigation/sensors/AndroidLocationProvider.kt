@@ -3,6 +3,8 @@ package com.navic.navigation.sensors
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.GnssMeasurement
+import android.location.GnssMeasurementsEvent
 import android.location.GnssStatus
 import android.location.Location
 import android.location.LocationListener
@@ -15,14 +17,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Native Android GNSS location and satellite tracking provider.
- * Interacts directly with LocationManager GPS_PROVIDER and GnssStatus callbacks
- * to stream real hardware position fixes and NavIC (IRNSS) constellation status.
+ * Native Android GNSS location and satellite tracking provider with hardware NavIC detection.
+ * Interacts directly with LocationManager, GnssStatus, and GnssMeasurements callbacks
+ * to stream real hardware position fixes, raw carrier frequencies, and NavIC (IRNSS) constellation status.
  */
 class AndroidLocationProvider(
     private val context: Context,
     private val onMeasurement: (String) -> Unit,
-    private val onStatus: (String) -> Unit
+    private val onStatus: (String) -> Unit,
+    private val onNavICReport: ((String) -> Unit)? = null
 ) : LocationListener {
 
     companion object {
@@ -34,10 +37,13 @@ class AndroidLocationProvider(
 
     private var isTracking = false
     private var gnssStatusCallback: GnssStatus.Callback? = null
+    private var gnssMeasurementsCallback: GnssMeasurementsEvent.Callback? = null
     private var cachedSatellites = JSONArray()
+    private var cachedNavICReport: String? = null
 
     init {
         setupGnssStatusCallback()
+        setupGnssMeasurementsCallback()
     }
 
     private fun setupGnssStatusCallback() {
@@ -45,14 +51,89 @@ class AndroidLocationProvider(
             gnssStatusCallback = object : GnssStatus.Callback() {
                 override fun onSatelliteStatusChanged(status: GnssStatus) {
                     val satArray = JSONArray()
+                    val navicSatsArray = JSONArray()
                     var navicCount = 0
+                    var navicUsedCount = 0
+                    var geoCount = 0
+                    var gsoCount = 0
+                    var navicSnrSum = 0.0
                     var usedCount = 0
+                    val bandsDetectedSet = mutableSetOf<String>()
 
                     for (i in 0 until status.satelliteCount) {
                         val constellationType = status.getConstellationType(i)
+                        val svid = status.getSvid(i)
+                        val cn0 = status.getCn0DbHz(i).toDouble()
+                        val elevation = status.getElevationDegrees(i).toDouble()
+                        val azimuth = status.getAzimuthDegrees(i).toDouble()
+                        val used = status.usedInFix(i)
+                        if (used) usedCount++
+
+                        // Carrier Frequency extraction (API 26+)
+                        val hasCarrierFreq = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && status.hasCarrierFrequencyHz(i)
+                        val carrierFreqHz = if (hasCarrierFreq) status.getCarrierFrequencyHz(i).toDouble() else null
+
+                        // Baseband C/N0 (API 30+)
+                        val hasBaseband = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && status.hasBasebandCn0DbHz(i)
+                        val basebandCn0 = if (hasBaseband) status.getBasebandCn0DbHz(i).toDouble() else null
+
+                        var bandStr = "Unknown"
+                        if (carrierFreqHz != null) {
+                            val mhz = carrierFreqHz / 1e6
+                            if (Math.abs(mhz - 1176.45) < 10) bandStr = "L5"
+                            else if (Math.abs(mhz - 2492.028) < 10) bandStr = "S"
+                            else if (Math.abs(mhz - 1575.42) < 10) bandStr = "L1"
+                        }
+
                         val constellationStr = when (constellationType) {
                             GnssStatus.CONSTELLATION_IRNSS -> {
                                 navicCount++
+                                if (used) navicUsedCount++
+                                navicSnrSum += cn0
+
+                                if (bandStr == "Unknown") {
+                                    bandStr = "L5" // Default civilian NavIC band
+                                }
+                                bandsDetectedSet.add(bandStr)
+
+                                val isGeo = svid == 3 || svid == 6 || svid == 7
+                                if (isGeo) geoCount++ else gsoCount++
+
+                                val svName = when (svid) {
+                                    1 -> "IRNSS-1A"
+                                    2 -> "IRNSS-1B"
+                                    3 -> "IRNSS-1C"
+                                    4 -> "IRNSS-1D"
+                                    5 -> "IRNSS-1E"
+                                    6 -> "IRNSS-1F"
+                                    7 -> "IRNSS-1G"
+                                    9 -> "IRNSS-1I"
+                                    10 -> "NVS-01"
+                                    else -> "IRNSS-1S$svid"
+                                }
+
+                                val slotStr = when (svid) {
+                                    3 -> "83.0°E (GEO)"
+                                    6 -> "32.5°E (GEO)"
+                                    7 -> "129.5°E (GEO)"
+                                    else -> "55.0°E (GSO)"
+                                }
+
+                                val navicSatDetail = JSONObject().apply {
+                                    put("svid", svid)
+                                    put("name", svName)
+                                    put("orbitType", if (isGeo) "GEO" else "GSO")
+                                    put("orbitalSlot", slotStr)
+                                    put("snr", cn0)
+                                    if (basebandCn0 != null) put("basebandCn0", basebandCn0)
+                                    put("elevation", elevation)
+                                    put("azimuth", azimuth)
+                                    put("usedInFix", used)
+                                    if (carrierFreqHz != null) put("carrierFrequencyHz", carrierFreqHz)
+                                    put("frequencyBand", bandStr)
+                                }
+                                navicSatsArray.put(navicSatDetail)
+
                                 "navic"
                             }
                             GnssStatus.CONSTELLATION_GPS -> "gps"
@@ -62,22 +143,58 @@ class AndroidLocationProvider(
                             else -> "unknown"
                         }
 
-                        val used = status.usedInFix(i)
-                        if (used) usedCount++
-
                         val sat = JSONObject().apply {
-                            put("id", "${constellationStr.uppercase()}-${status.getSvid(i)}")
-                            put("prn", status.getSvid(i))
+                            put("id", "${constellationStr.uppercase()}-$svid")
+                            put("prn", svid)
                             put("constellation", constellationStr)
-                            put("snr", status.getCn0DbHz(i).toDouble())
-                            put("elevation", status.getElevationDegrees(i).toDouble())
-                            put("azimuth", status.getAzimuthDegrees(i).toDouble())
+                            put("snr", cn0)
+                            put("elevation", elevation)
+                            put("azimuth", azimuth)
                             put("usedInFix", used)
+                            if (carrierFreqHz != null) put("carrierFrequencyHz", carrierFreqHz)
+                            if (bandStr != "Unknown") put("signalBand", bandStr)
+                            if (basebandCn0 != null) put("basebandCn0DbHz", basebandCn0)
                         }
                         satArray.put(sat)
                     }
 
                     cachedSatellites = satArray
+
+                    // Build NavIC Signal Report
+                    val avgCn0 = if (navicCount > 0) Math.round((navicSnrSum / navicCount) * 10.0) / 10.0 else 0.0
+                    val lockStatus = when {
+                        navicUsedCount >= 4 -> "Full Lock"
+                        navicUsedCount >= 1 || navicCount >= 1 -> "Marginal Lock"
+                        else -> "No Signal"
+                    }
+                    val fixAssistance = when {
+                        navicUsedCount >= 4 && usedCount == navicUsedCount -> "Standalone NavIC"
+                        navicUsedCount > 0 -> "NavIC + Multi-GNSS"
+                        else -> "Multi-GNSS Only"
+                    }
+
+                    val bandsArray = JSONArray()
+                    bandsDetectedSet.forEach { bandsArray.put(it) }
+                    if (bandsArray.length() == 0 && navicCount > 0) {
+                        bandsArray.put("L5")
+                    }
+
+                    val navicReportJson = JSONObject().apply {
+                        put("isNavICDetected", navicCount > 0)
+                        put("lockStatus", lockStatus)
+                        put("fixAssistanceLevel", fixAssistance)
+                        put("totalVisible", navicCount)
+                        put("usedInFix", navicUsedCount)
+                        put("geoCount", geoCount)
+                        put("gsoCount", gsoCount)
+                        put("averageCn0", avgCn0)
+                        put("bandsDetected", bandsArray)
+                        put("signalIntegrityScore", if (navicCount > 0) Math.min(100, (Math.round((avgCn0 / 45.0) * 60.0) + geoCount * 10 + navicCount * 5).toInt()) else 0)
+                        put("satellites", navicSatsArray)
+                    }
+
+                    cachedNavICReport = navicReportJson.toString()
+                    onNavICReport?.invoke(cachedNavICReport!!)
 
                     val statusJson = JSONObject().apply {
                         put("totalSatellites", status.satelliteCount)
@@ -89,6 +206,28 @@ class AndroidLocationProvider(
                 }
             }
         }
+    }
+
+    private fun setupGnssMeasurementsCallback() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            gnssMeasurementsCallback = object : GnssMeasurementsEvent.Callback() {
+                override fun onGnssMeasurementsReceived(eventArgs: GnssMeasurementsEvent) {
+                    var rawNavICCount = 0
+                    for (measurement in eventArgs.measurements) {
+                        if (measurement.constellationType == GnssStatus.CONSTELLATION_IRNSS) {
+                            rawNavICCount++
+                        }
+                    }
+                    if (rawNavICCount > 0) {
+                        Log.d(TAG, "Raw NavIC measurements received: $rawNavICCount satellites")
+                    }
+                }
+            }
+        }
+    }
+
+    fun getLatestNavICReport(): String? {
+        return cachedNavICReport
     }
 
     @SuppressLint("MissingPermission")
@@ -124,12 +263,21 @@ class AndroidLocationProvider(
                 )
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && gnssStatusCallback != null) {
-                lm.registerGnssStatusCallback(gnssStatusCallback!!)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (gnssStatusCallback != null) {
+                    lm.registerGnssStatusCallback(gnssStatusCallback!!)
+                }
+                if (gnssMeasurementsCallback != null) {
+                    try {
+                        lm.registerGnssMeasurementsCallback(gnssMeasurementsCallback!!)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "registerGnssMeasurementsCallback not supported or disabled: ${e.message}")
+                    }
+                }
             }
 
             isTracking = true
-            Log.i(TAG, "Native GNSS tracking started")
+            Log.i(TAG, "Native GNSS tracking started with NavIC detection")
             return true
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException starting location updates", e)
@@ -146,8 +294,13 @@ class AndroidLocationProvider(
 
         try {
             lm.removeUpdates(this)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && gnssStatusCallback != null) {
-                lm.unregisterGnssStatusCallback(gnssStatusCallback!!)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (gnssStatusCallback != null) {
+                    lm.unregisterGnssStatusCallback(gnssStatusCallback!!)
+                }
+                if (gnssMeasurementsCallback != null) {
+                    lm.unregisterGnssMeasurementsCallback(gnssMeasurementsCallback!!)
+                }
             }
             isTracking = false
             Log.i(TAG, "Native GNSS tracking stopped")

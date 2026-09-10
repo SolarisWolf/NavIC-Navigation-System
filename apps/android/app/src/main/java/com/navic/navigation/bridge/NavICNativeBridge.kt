@@ -36,6 +36,9 @@ class NavICNativeBridge(
         },
         onStatus = { jsonStr ->
             dispatchToWeb("navic-hardware-gnss-status", jsonStr)
+        },
+        onNavICReport = { jsonStr ->
+            dispatchToWeb("navic-hardware-report", jsonStr)
         }
     )
 
@@ -94,6 +97,14 @@ class NavICNativeBridge(
     @JavascriptInterface
     fun getHardwareSensorStatus(): String {
         return sensorProvider.getStatusJson()
+    }
+
+    /**
+     * Returns the latest NavIC constellation detection and signal quality report JSON.
+     */
+    @JavascriptInterface
+    fun getNavICConstellationReport(): String {
+        return locationProvider.getLatestNavICReport() ?: "{}"
     }
 
     /**

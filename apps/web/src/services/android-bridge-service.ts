@@ -9,6 +9,7 @@
 import {
   Logger,
   type GNSSMeasurement,
+  type NavICSignalReport,
   type AccelerometerReading,
   type GyroscopeReading,
   type MagnetometerReading,
@@ -47,6 +48,7 @@ declare global {
       stopHardwareSensors(): void;
       isHardwareSensorsActive(): boolean;
       getHardwareSensorStatus(): string;
+      getNavICConstellationReport(): string;
       log(level: string, tag: string, message: string): void;
     };
   }
@@ -175,6 +177,31 @@ class AndroidBridgeServiceImpl {
     if (this.isNativeAndroid && window.NavICNative) {
       window.NavICNative.updateGuidanceNotification(maneuver, stats);
     }
+  }
+
+  public getNavICConstellationReport(): NavICSignalReport | null {
+    if (this.isNativeAndroid && window.NavICNative) {
+      try {
+        const raw = window.NavICNative.getNavICConstellationReport();
+        if (raw && raw !== '{}') {
+          return JSON.parse(raw);
+        }
+      } catch (e) {
+        this.logger.warn('Failed to parse NavIC constellation report:', e);
+      }
+    }
+    return null;
+  }
+
+  public onNavICReport(callback: (report: NavICSignalReport) => void): () => void {
+    const handler = (evt: Event) => {
+      const customEvt = evt as CustomEvent<NavICSignalReport>;
+      if (customEvt.detail) {
+        callback(customEvt.detail);
+      }
+    };
+    window.addEventListener('navic-hardware-report', handler);
+    return () => window.removeEventListener('navic-hardware-report', handler);
   }
 
   public stopGuidance(): void {

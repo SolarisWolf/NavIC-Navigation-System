@@ -11,6 +11,8 @@ export {
   Constellation,
   FixType,
   type SatelliteInfo,
+  type NavICSatelliteDetail,
+  type NavICSignalReport,
   type GNSSMeasurement,
   type SatelliteSummary,
   type GNSSMeasurementCallback,

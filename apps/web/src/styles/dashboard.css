@@ -54,6 +54,15 @@
   color: var(--accent-info);
 }
 
+/* NavIC Regional Fix card accent */
+.dashboard .card--navic {
+  border-top: 2px solid var(--color-navic, #ff9933);
+}
+
+.dashboard .card--navic .card__title-icon {
+  color: var(--color-navic, #ff9933);
+}
+
 /* Constellation summary within satellites card */
 .constellation-row {
   display: flex;

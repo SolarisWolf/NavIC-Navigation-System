@@ -6,7 +6,7 @@
  * Subscribes to GNSS service for live data updates.
  */
 
-import { type GNSSMeasurement, type GNSSPosition, FixType, Constellation, SensorFusionMode, type SensorFusionStatus } from '@navic/shared-models';
+import { type GNSSMeasurement, type GNSSPosition, FixType, Constellation, SensorFusionMode, type SensorFusionStatus, type NavICSignalReport } from '@navic/shared-models';
 import { gnssService } from '../services/gnss-service.js';
 import { fusionService } from '../services/fusion-service.js';
 import { positionService } from '../services/position-service.js';
@@ -14,6 +14,7 @@ import { positionService } from '../services/position-service.js';
 let unsubscribe: (() => void) | null = null;
 let unsubscribeFusion: (() => void) | null = null;
 let unsubscribePos: (() => void) | null = null;
+let unsubscribeNavIC: (() => void) | null = null;
 
 export function renderDashboard(container: HTMLElement): void {
   // Clean up previous subscriptions
@@ -28,6 +29,10 @@ export function renderDashboard(container: HTMLElement): void {
   if (unsubscribePos) {
     unsubscribePos();
     unsubscribePos = null;
+  }
+  if (unsubscribeNavIC) {
+    unsubscribeNavIC();
+    unsubscribeNavIC = null;
   }
 
   container.innerHTML = `
@@ -82,6 +87,26 @@ export function renderDashboard(container: HTMLElement): void {
           </div>
         </div>
 
+        <!-- NavIC Regional Constellation Card -->
+        <div class="card card--navic" id="card-navic">
+          <div class="card__header">
+            <div class="card__title">
+              <span class="card__title-icon">🇮🇳</span>
+              NavIC Regional System
+            </div>
+            <span class="card__badge" id="navic-dash-badge">No Signal</span>
+          </div>
+          <div class="card__body">
+            <div class="metric-row"><span class="metric-row__label">Constellation Lock</span><span class="metric-row__value metric-row__value--empty" id="d-navic-lock">Searching...</span></div>
+            <div class="metric-row"><span class="metric-row__label">Assistance Mode</span><span class="metric-row__value metric-row__value--empty" id="d-navic-assist">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Visible / In Fix</span><span class="metric-row__value metric-row__value--empty" id="d-navic-svs">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Signal Integrity</span><span class="metric-row__value metric-row__value--empty" id="d-navic-integrity">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Frequencies</span><span class="metric-row__value metric-row__value--empty" id="d-navic-bands">L5 / S / L1</span></div>
+            <div class="metric-row"><span class="metric-row__label">GEO / GSO Geometry</span><span class="metric-row__value metric-row__value--empty" id="d-navic-orbits">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Mean Signal (C/N₀)</span><span class="metric-row__value metric-row__value--empty" id="d-navic-cn0">--</span></div>
+          </div>
+        </div>
+
         <!-- Navigation Card -->
         <div class="card card--navigation" id="card-navigation">
           <div class="card__header">
@@ -129,6 +154,9 @@ export function renderDashboard(container: HTMLElement): void {
 
   // Subscribe to Position Engine updates
   unsubscribePos = positionService.subscribe(updatePositionMetrics);
+
+  // Subscribe to NavIC telemetry updates
+  unsubscribeNavIC = gnssService.subscribeNavIC(updateNavICCard);
 }
 
 function updateDashboard(m: GNSSMeasurement): void {
@@ -258,5 +286,30 @@ function updatePositionMetrics(pos: GNSSPosition): void {
     fixBadge.textContent = pos.isNavICAssisted ? '3D Fix (NavIC 🇮🇳)' : '3D Fix';
   }
 }
+
+function updateNavICCard(report: NavICSignalReport): void {
+  const badge = document.getElementById('navic-dash-badge');
+  if (badge) {
+    if (report.lockStatus === 'Full Lock') {
+      badge.textContent = 'Full Lock 🇮🇳';
+      badge.className = 'card__badge status-badge--active';
+    } else if (report.lockStatus === 'Marginal Lock') {
+      badge.textContent = 'Marginal Lock';
+      badge.className = 'card__badge status-badge--warning';
+    } else {
+      badge.textContent = 'No Signal';
+      badge.className = 'card__badge status-badge--idle';
+    }
+  }
+
+  setMetric('d-navic-lock', report.lockStatus, report.isNavICDetected);
+  setMetric('d-navic-assist', report.fixAssistanceLevel, report.isNavICDetected);
+  setMetric('d-navic-svs', `${report.totalVisible} visible (${report.usedInFix} in fix)`, report.totalVisible > 0);
+  setMetric('d-navic-integrity', `${report.signalIntegrityScore.toFixed(0)}% (Dual-Band)`, report.isNavICDetected);
+  setMetric('d-navic-bands', report.bandsDetected.length > 0 ? report.bandsDetected.join(' + ') : 'None', report.bandsDetected.length > 0);
+  setMetric('d-navic-orbits', `${report.geoCount} GEO / ${report.gsoCount} GSO`, report.totalVisible > 0);
+  setMetric('d-navic-cn0', report.averageCn0 > 0 ? `${report.averageCn0.toFixed(1)} dB-Hz` : '--', report.averageCn0 > 0);
+}
+
 
 

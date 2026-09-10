@@ -57,6 +57,51 @@ export interface SatelliteInfo {
 
   /** Whether this satellite is used in the current position fix */
   readonly usedInFix: boolean;
+
+  /** Carrier frequency in Hz (e.g. 1176.45 MHz for L5, 2492.028 MHz for S-band) */
+  readonly carrierFrequencyHz?: number;
+
+  /** Identified frequency band */
+  readonly signalBand?: 'L1' | 'L5' | 'S' | 'E1' | 'E5a' | 'B1' | 'B2a' | 'Unknown';
+
+  /** Baseband carrier-to-noise ratio in dB-Hz (Android API 30+) */
+  readonly basebandCn0DbHz?: number;
+}
+
+// ─── NavIC Constellation Detail ──────────────────────────────────────────────
+
+/**
+ * Detailed telemetry and orbital characteristics for a single NavIC (IRNSS) space vehicle.
+ */
+export interface NavICSatelliteDetail {
+  readonly svid: number;
+  readonly name: string;
+  readonly orbitType: 'GEO' | 'GSO';
+  readonly orbitalSlot: string; // e.g. "83.0°E", "32.5°E", "55.0°E"
+  readonly snr: number; // dB-Hz
+  readonly basebandCn0?: number; // dB-Hz
+  readonly elevation: number; // degrees
+  readonly azimuth: number; // degrees
+  readonly usedInFix: boolean;
+  readonly carrierFrequencyHz?: number;
+  readonly frequencyBand: 'L5' | 'S' | 'L1' | 'Unknown';
+}
+
+/**
+ * Aggregated NavIC constellation signal analysis and regional fix evaluation report.
+ */
+export interface NavICSignalReport {
+  readonly isNavICDetected: boolean;
+  readonly lockStatus: 'Full Lock' | 'Marginal Lock' | 'No Signal';
+  readonly fixAssistanceLevel: 'Standalone NavIC' | 'NavIC + Multi-GNSS' | 'Multi-GNSS Only';
+  readonly totalVisible: number;
+  readonly usedInFix: number;
+  readonly geoCount: number;
+  readonly gsoCount: number;
+  readonly averageCn0: number; // dB-Hz
+  readonly bandsDetected: readonly ('L5' | 'S' | 'L1')[];
+  readonly signalIntegrityScore: number; // 0.0 - 100.0%
+  readonly satellites: readonly NavICSatelliteDetail[];
 }
 
 // ─── Position & Measurement ──────────────────────────────────────────────────
