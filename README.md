@@ -90,12 +90,12 @@ npm run dev --workspace=@navic/web
 | Phase | Name | Status |
 |-------|------|--------|
 | **0** | Project Architecture & Repository Setup | ✅ Complete |
-| 1 | Web Application Foundation | ⏳ Pending |
-| 2 | GNSS/NavIC Simulator | ⏳ Pending |
-| 3 | GNSS Position Engine | ⏳ Pending |
+| 1 | Web Application Foundation | ✅ Complete |
+| 2 | GNSS/NavIC Simulator | ✅ Complete |
+| 3 | Local Base Map Integration | ⏳ Pending |
 | 4 | IMU Simulator | ⏳ Pending |
 | 5 | Extended Kalman Filter / Sensor Fusion | ⏳ Pending |
-| 6 | Offline Map System | ⏳ Pending |
+| 6 | GNSS Position Engine | ⏳ Pending |
 | 7 | Offline POI Database | ⏳ Pending |
 | 8 | Offline Routing Engine | ⏳ Pending |
 | 9 | Navigation Engine | ⏳ Pending |
