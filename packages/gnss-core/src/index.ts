@@ -11,6 +11,11 @@ export type {
   GNSSStatus,
   SatelliteInfo,
   SatelliteSummary,
+  DilutionOfPrecision,
+  GNSSPosition,
+  PositionEngineConfig,
+  GNSSPositionCallback,
+  GNSSLossOfFixCallback,
 } from '@navic/shared-models';
 
 export {
@@ -38,3 +43,11 @@ export {
   addPositionNoise,
   estimateAccuracy,
 } from './simulator/index.js';
+
+// Export position engine & algorithms
+export {
+  PositionEngine,
+  calculateDOP,
+  OutlierFilter,
+  type OutlierCheckResult,
+} from './engine/index.js';

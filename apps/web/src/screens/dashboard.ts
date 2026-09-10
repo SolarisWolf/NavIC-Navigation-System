@@ -6,12 +6,14 @@
  * Subscribes to GNSS service for live data updates.
  */
 
-import { type GNSSMeasurement, FixType, Constellation, SensorFusionMode, type SensorFusionStatus } from '@navic/shared-models';
+import { type GNSSMeasurement, type GNSSPosition, FixType, Constellation, SensorFusionMode, type SensorFusionStatus } from '@navic/shared-models';
 import { gnssService } from '../services/gnss-service.js';
 import { fusionService } from '../services/fusion-service.js';
+import { positionService } from '../services/position-service.js';
 
 let unsubscribe: (() => void) | null = null;
 let unsubscribeFusion: (() => void) | null = null;
+let unsubscribePos: (() => void) | null = null;
 
 export function renderDashboard(container: HTMLElement): void {
   // Clean up previous subscriptions
@@ -22,6 +24,10 @@ export function renderDashboard(container: HTMLElement): void {
   if (unsubscribeFusion) {
     unsubscribeFusion();
     unsubscribeFusion = null;
+  }
+  if (unsubscribePos) {
+    unsubscribePos();
+    unsubscribePos = null;
   }
 
   container.innerHTML = `
@@ -47,6 +53,7 @@ export function renderDashboard(container: HTMLElement): void {
           <div class="card__body">
             <div class="metric-row"><span class="metric-row__label">Fix Type</span><span class="metric-row__value metric-row__value--empty" id="d-fix">--</span></div>
             <div class="metric-row"><span class="metric-row__label">Accuracy</span><span class="metric-row__value metric-row__value--empty" id="d-accuracy">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Geometry (HDOP)</span><span class="metric-row__value metric-row__value--empty" id="d-hdop">--</span></div>
             <div class="metric-row"><span class="metric-row__label">Latitude</span><span class="metric-row__value metric-row__value--empty" id="d-lat">--</span></div>
             <div class="metric-row"><span class="metric-row__label">Longitude</span><span class="metric-row__value metric-row__value--empty" id="d-lon">--</span></div>
             <div class="metric-row"><span class="metric-row__label">Altitude</span><span class="metric-row__value metric-row__value--empty" id="d-alt">--</span></div>
@@ -119,6 +126,9 @@ export function renderDashboard(container: HTMLElement): void {
 
   // Subscribe to Fusion updates
   unsubscribeFusion = fusionService.subscribeStatus(updateFusionCard);
+
+  // Subscribe to Position Engine updates
+  unsubscribePos = positionService.subscribe(updatePositionMetrics);
 }
 
 function updateDashboard(m: GNSSMeasurement): void {
@@ -238,4 +248,15 @@ function updateFusionCard(s: SensorFusionStatus): void {
     : '< 0.5 ms (Target: < 20 ms)';
   setMetric('d-ekf-latency', latText, true);
 }
+
+function updatePositionMetrics(pos: GNSSPosition): void {
+  const isNoFix = pos.fixType === FixType.NoFix;
+  setMetric('d-hdop', isNoFix ? '--' : `${pos.dop.hdop.toFixed(2)} (${pos.isNavICAssisted ? 'NavIC' : 'Std'})`, !isNoFix);
+
+  const fixBadge = document.getElementById('gnss-fix-badge');
+  if (fixBadge && !isNoFix) {
+    fixBadge.textContent = pos.isNavICAssisted ? '3D Fix (NavIC 🇮🇳)' : '3D Fix';
+  }
+}
+
 

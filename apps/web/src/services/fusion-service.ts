@@ -18,6 +18,7 @@ import {
 import { SensorFusionEngine } from '@navic/sensor-fusion';
 import { gnssService } from './gnss-service.js';
 import { imuService } from './imu-service.js';
+import { positionService } from './position-service.js';
 
 class FusionServiceImpl {
   private engine: SensorFusionEngine;
@@ -56,9 +57,21 @@ class FusionServiceImpl {
       }
     });
 
-    // 1. Ingest GNSS measurements (1 Hz)
-    gnssService.subscribe((measurement) => {
-      this.engine.processGNSS(measurement);
+    // 1. Ingest processed GNSS positions from positionService (1 Hz)
+    positionService.subscribe((pos) => {
+      this.engine.processGNSS({
+        timestamp: pos.timestamp,
+        latitude: pos.coordinate.latitude,
+        longitude: pos.coordinate.longitude,
+        altitude: pos.coordinate.altitude ?? 0,
+        speed: pos.speed,
+        bearing: pos.bearing,
+        horizontalAccuracy: pos.horizontalAccuracy,
+        verticalAccuracy: pos.verticalAccuracy,
+        fixType: pos.fixType,
+        satellites: [],
+        isSimulated: true,
+      });
     });
 
     // 2. Ingest IMU telemetry (50 Hz)

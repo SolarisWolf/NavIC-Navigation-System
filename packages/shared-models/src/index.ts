@@ -19,6 +19,15 @@ export {
   type GNSSProvider,
 } from './gnss.types.js';
 
+// ─── GNSS Engine & DOP Types ────────────────────────────────────────────────
+export {
+  type DilutionOfPrecision,
+  type GNSSPosition,
+  type PositionEngineConfig,
+  type GNSSPositionCallback,
+  type GNSSLossOfFixCallback,
+} from './gnss-engine.types.js';
+
 // ─── IMU Types ───────────────────────────────────────────────────────────────
 export {
   type Vector3,

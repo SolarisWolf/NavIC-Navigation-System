@@ -2,14 +2,16 @@
  * Satellite Screen
  *
  * Detailed GNSS satellite view with sky plot, signal strength bars,
- * and constellation filter toggles.
- * Subscribes to GNSS service for live data updates.
+ * constellation filter toggles, and real-time Dilution of Precision (DOP)
+ * metrics from the GNSS Position Engine.
  */
 
-import { type GNSSMeasurement, type SatelliteInfo, Constellation, FixType } from '@navic/shared-models';
+import { type GNSSMeasurement, type GNSSPosition, type SatelliteInfo, Constellation, FixType } from '@navic/shared-models';
 import { gnssService } from '../services/gnss-service.js';
+import { positionService } from '../services/position-service.js';
 
 let unsubscribe: (() => void) | null = null;
+let unsubscribePos: (() => void) | null = null;
 let activeConstellations: Set<Constellation> = new Set([
   Constellation.GPS, Constellation.NavIC, Constellation.Galileo,
   Constellation.BeiDou, Constellation.GLONASS,
@@ -36,15 +38,42 @@ export function renderSatelliteScreen(container: HTMLElement): void {
     unsubscribe();
     unsubscribe = null;
   }
+  if (unsubscribePos) {
+    unsubscribePos();
+    unsubscribePos = null;
+  }
 
   container.innerHTML = `
+    <style>
+      .navic-badge-gold {
+        background: rgba(255, 111, 0, 0.15) !important;
+        border-color: #ff8f00 !important;
+        color: #ffab00 !important;
+        font-weight: 600;
+      }
+      .dop-badge {
+        font-family: monospace;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .sat-header-badges {
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+      }
+    </style>
+
     <div class="satellite-screen screen">
       <div class="screen__header">
         <div>
-          <h1 class="screen__title">Satellites</h1>
-          <p class="screen__subtitle">GNSS constellation tracking and signal analysis</p>
+          <h1 class="screen__title">Satellites & Geometry</h1>
+          <p class="screen__subtitle">GNSS constellation tracking, line-of-sight sky plot, and Dilution of Precision (DOP)</p>
         </div>
-        <span class="status-badge status-badge--idle" id="sat-fix-badge">No Fix</span>
+        <div class="sat-header-badges">
+          <span class="status-badge" id="sat-navic-badge">Checking NavIC...</span>
+          <span class="status-badge status-badge--idle" id="sat-fix-badge">No Fix</span>
+        </div>
       </div>
 
       <div class="satellite-screen__layout">
@@ -81,8 +110,40 @@ export function renderSatelliteScreen(container: HTMLElement): void {
         </div>
       </div>
 
+      <!-- Dilution of Precision (DOP) Telemetry -->
+      <div class="section" style="margin-top: var(--space-6);">
+        <div class="section__title">📐 Dilution of Precision (Satellite Geometry & Error Multipliers)</div>
+        <div class="sensor-screen__grid">
+          <!-- Horizontal & Accuracy -->
+          <div class="sensor-card">
+            <div class="sensor-card__header">
+              <span class="sensor-card__title">Horizontal Geometry (HDOP)</span>
+              <span class="sensor-card__status active-badge" id="dop-hdop-rating">Calculating</span>
+            </div>
+            <div class="sensor-axes">
+              <div class="sensor-axis"><span class="sensor-axis__label">HDOP Value</span><span class="sensor-axis__value sensor-val" id="dop-hdop">--</span><span class="sensor-axis__unit">&lt;2 ideal</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Est. Accuracy</span><span class="sensor-axis__value sensor-val" id="dop-hacc">--</span><span class="sensor-axis__unit">m (1σ)</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Sats in Solution</span><span class="sensor-axis__value sensor-val" id="dop-sats-used">--</span><span class="sensor-axis__unit">satellites</span></div>
+            </div>
+          </div>
+
+          <!-- 3D & Geometric DOP -->
+          <div class="sensor-card">
+            <div class="sensor-card__header">
+              <span class="sensor-card__title">Vertical & 3D Geometry (PDOP/GDOP)</span>
+              <span class="sensor-card__status active-badge" id="dop-pdop-rating">Calculating</span>
+            </div>
+            <div class="sensor-axes">
+              <div class="sensor-axis"><span class="sensor-axis__label">VDOP</span><span class="sensor-axis__value sensor-val" id="dop-vdop">--</span><span class="sensor-axis__unit">vertical</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">PDOP</span><span class="sensor-axis__value sensor-val" id="dop-pdop">--</span><span class="sensor-axis__unit">3D position</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">GDOP</span><span class="sensor-axis__value sensor-val" id="dop-gdop">--</span><span class="sensor-axis__unit">overall</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Constellation Detail Cards -->
-      <div class="satellite-details" id="constellation-details">
+      <div class="satellite-details" id="constellation-details" style="margin-top: var(--space-6);">
         ${renderConstellationCard('GPS', 'gps', '📡')}
         ${renderConstellationCard('NavIC / IRNSS', 'navic', '🇮🇳')}
         ${renderConstellationCard('Galileo', 'galileo', '🇪🇺')}
@@ -110,6 +171,9 @@ export function renderSatelliteScreen(container: HTMLElement): void {
 
   // Subscribe to GNSS updates
   unsubscribe = gnssService.subscribe(updateSatelliteScreen);
+
+  // Subscribe to Position Engine processed outputs for DOP
+  unsubscribePos = positionService.subscribe(updateDopDisplay);
 }
 
 function updateSatelliteScreen(m: GNSSMeasurement): void {
@@ -140,101 +204,158 @@ function updateSatelliteScreen(m: GNSSMeasurement): void {
   updateConstellationCards(m.satellites);
 }
 
-function updateSkyPlot(satellites: SatelliteInfo[]): void {
-  const dotsContainer = document.getElementById('sky-plot-dots');
-  if (!dotsContainer) return;
-
-  // Clear old dots
-  dotsContainer.innerHTML = '';
-
-  for (const sat of satellites) {
-    const dot = document.createElement('div');
-    dot.style.cssText = `
-      position: absolute;
-      width: ${sat.usedInFix ? '10px' : '7px'};
-      height: ${sat.usedInFix ? '10px' : '7px'};
-      border-radius: 50%;
-      background: ${CONSTELLATION_COLORS[sat.constellation] ?? 'var(--text-muted)'};
-      opacity: ${sat.usedInFix ? 1 : 0.5};
-      box-shadow: ${sat.usedInFix ? `0 0 6px ${CONSTELLATION_COLORS[sat.constellation]}` : 'none'};
-      transform: translate(-50%, -50%);
-      transition: all 0.3s ease;
-      z-index: 10;
-    `;
-
-    // Convert elevation/azimuth to x/y in the polar chart
-    // elevation 90° → center, 0° → edge
-    const r = (1 - sat.elevation / 90) * 0.48; // radius fraction (0.48 = edge)
-    const azRad = (sat.azimuth - 90) * (Math.PI / 180); // rotate so N is up
-    const x = 50 + r * 100 * Math.cos(azRad);
-    const y = 50 + r * 100 * Math.sin(azRad);
-
-    dot.style.left = `${x}%`;
-    dot.style.top = `${y}%`;
-    dot.title = `${CONSTELLATION_CSS[sat.constellation]?.toUpperCase() ?? '?'}-${sat.svid}\nEl: ${sat.elevation}° Az: ${sat.azimuth}°\nSNR: ${sat.snr} dB-Hz${sat.usedInFix ? ' ✓ Used' : ''}`;
-
-    dotsContainer.appendChild(dot);
-  }
-}
-
-function updateSignalBars(satellites: SatelliteInfo[]): void {
-  const barsContainer = document.getElementById('signal-bars');
-  if (!barsContainer) return;
-
-  if (satellites.length === 0) {
-    barsContainer.innerHTML = '<div class="signal-panel__empty">No satellites tracked</div>';
-    return;
-  }
-
-  // Sort by constellation, then svid
-  const sorted = [...satellites].sort((a, b) => {
-    if (a.constellation !== b.constellation) return a.constellation.localeCompare(b.constellation);
-    return a.svid - b.svid;
-  });
-
-  barsContainer.innerHTML = sorted.map(sat => {
-    const heightPct = Math.min(100, (sat.snr / 50) * 100);
-    const cssClass = CONSTELLATION_CSS[sat.constellation] ?? '';
-    return `
-      <div class="signal-bar" title="${cssClass.toUpperCase()}-${sat.svid}: ${sat.snr} dB-Hz">
-        <div class="signal-bar__fill signal-bar__fill--${cssClass}"
-             style="height: ${heightPct}%"></div>
-        <span class="signal-bar__label">${sat.svid}</span>
-      </div>
-    `;
-  }).join('');
-}
-
-function updateConstellationCards(satellites: readonly SatelliteInfo[]): void {
-  const constellationMap: Record<string, { visible: number; used: number; totalSnr: number; bestSnr: number }> = {
-    gps: { visible: 0, used: 0, totalSnr: 0, bestSnr: 0 },
-    navic: { visible: 0, used: 0, totalSnr: 0, bestSnr: 0 },
-    galileo: { visible: 0, used: 0, totalSnr: 0, bestSnr: 0 },
-    beidou: { visible: 0, used: 0, totalSnr: 0, bestSnr: 0 },
-  };
-
-  for (const sat of satellites) {
-    const key = CONSTELLATION_CSS[sat.constellation];
-    if (key && constellationMap[key]) {
-      constellationMap[key].visible++;
-      if (sat.usedInFix) constellationMap[key].used++;
-      constellationMap[key].totalSnr += sat.snr;
-      constellationMap[key].bestSnr = Math.max(constellationMap[key].bestSnr, sat.snr);
+function updateDopDisplay(pos: GNSSPosition): void {
+  const navicBadge = document.getElementById('sat-navic-badge');
+  if (navicBadge) {
+    if (pos.isNavICAssisted) {
+      navicBadge.textContent = `🇮🇳 NavIC Assisted (${pos.navicSatellitesUsed} sats)`;
+      navicBadge.className = 'status-badge navic-badge-gold';
+    } else {
+      navicBadge.textContent = 'Standard Multi-GNSS';
+      navicBadge.className = 'status-badge status-badge--idle';
     }
   }
 
-  for (const [key, data] of Object.entries(constellationMap)) {
-    setDetailValue(`${key}-visible`, data.visible > 0 ? `${data.visible}` : '--', data.visible > 0);
-    setDetailValue(`${key}-used`, data.used > 0 ? `${data.used}` : '--', data.used > 0);
-    setDetailValue(`${key}-avg-snr`, data.visible > 0 ? `${(data.totalSnr / data.visible).toFixed(1)} dB-Hz` : '-- dB-Hz', data.visible > 0);
-    setDetailValue(`${key}-best-snr`, data.bestSnr > 0 ? `${data.bestSnr.toFixed(1)} dB-Hz` : '-- dB-Hz', data.bestSnr > 0);
+  const elHdop = document.getElementById('dop-hdop');
+  const elVdop = document.getElementById('dop-vdop');
+  const elPdop = document.getElementById('dop-pdop');
+  const elGdop = document.getElementById('dop-gdop');
+  const elHacc = document.getElementById('dop-hacc');
+  const elSatsUsed = document.getElementById('dop-sats-used');
 
-    const badge = document.getElementById(`${key}-sat-badge`);
-    if (badge) badge.textContent = `${data.visible} sats`;
+  const elHdopRating = document.getElementById('dop-hdop-rating');
+  const elPdopRating = document.getElementById('dop-pdop-rating');
+
+  if (pos.fixType === FixType.NoFix) {
+    if (elHdop) elHdop.textContent = '--';
+    if (elVdop) elVdop.textContent = '--';
+    if (elPdop) elPdop.textContent = '--';
+    if (elGdop) elGdop.textContent = '--';
+    if (elHacc) elHacc.textContent = '--';
+    if (elSatsUsed) elSatsUsed.textContent = '0';
+    if (elHdopRating) elHdopRating.textContent = 'No Solution';
+    if (elPdopRating) elPdopRating.textContent = 'No Solution';
+    return;
+  }
+
+  if (elHdop) elHdop.textContent = pos.dop.hdop.toFixed(2);
+  if (elVdop) elVdop.textContent = pos.dop.vdop.toFixed(2);
+  if (elPdop) elPdop.textContent = pos.dop.pdop.toFixed(2);
+  if (elGdop) elGdop.textContent = pos.dop.gdop.toFixed(2);
+  if (elHacc) elHacc.textContent = `±${pos.horizontalAccuracy.toFixed(1)}`;
+  if (elSatsUsed) elSatsUsed.textContent = `${pos.satellitesUsed}`;
+
+  if (elHdopRating) {
+    if (pos.dop.hdop < 1.2) elHdopRating.textContent = 'Ideal (<1.2)';
+    else if (pos.dop.hdop < 2.0) elHdopRating.textContent = 'Excellent (<2.0)';
+    else if (pos.dop.hdop < 4.0) elHdopRating.textContent = 'Good (<4.0)';
+    else elHdopRating.textContent = 'Moderate';
+  }
+
+  if (elPdopRating) {
+    if (pos.dop.pdop < 2.0) elPdopRating.textContent = 'Excellent';
+    else if (pos.dop.pdop < 4.0) elPdopRating.textContent = 'Good';
+    else elPdopRating.textContent = 'Moderate';
   }
 }
 
-function setDetailValue(id: string, value: string, hasData: boolean): void {
+function updateSkyPlot(satellites: readonly SatelliteInfo[]): void {
+  const container = document.getElementById('sky-plot-dots');
+  if (!container) return;
+
+  const RADIUS = 110;
+  const CENTER_X = 130;
+  const CENTER_Y = 130;
+
+  let html = '';
+  for (const s of satellites) {
+    const r = RADIUS * (1 - s.elevation / 90);
+    const azRad = (s.azimuth * Math.PI) / 180;
+    const x = CENTER_X + r * Math.sin(azRad);
+    const y = CENTER_Y - r * Math.cos(azRad);
+
+    const css = CONSTELLATION_CSS[s.constellation] || 'unknown';
+    const usedClass = s.usedInFix ? 'sky-dot--used' : '';
+
+    html += `
+      <div class="sky-dot sky-dot--${css} ${usedClass}"
+           style="left: ${x - 9}px; top: ${y - 9}px;"
+           title="${s.constellation} PRN ${s.svid} — El: ${s.elevation}°, Az: ${s.azimuth}°, SNR: ${s.snr} dB-Hz">
+        ${s.svid}
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function updateSignalBars(satellites: readonly SatelliteInfo[]): void {
+  const container = document.getElementById('signal-bars');
+  if (!container) return;
+
+  if (satellites.length === 0) {
+    container.innerHTML = '<div class="signal-panel__empty">No satellites match active filters</div>';
+    return;
+  }
+
+  const sorted = [...satellites].sort((a, b) => {
+    if (a.constellation !== b.constellation) {
+      return a.constellation.localeCompare(b.constellation);
+    }
+    return a.svid - b.svid;
+  });
+
+  const MAX_SNR = 50;
+  let html = '';
+  for (const s of sorted) {
+    const pct = Math.min(100, Math.max(0, (s.snr / MAX_SNR) * 100));
+    const css = CONSTELLATION_CSS[s.constellation] || 'unknown';
+    const usedClass = s.usedInFix ? 'signal-bar--used' : '';
+
+    html += `
+      <div class="signal-bar-col" title="${s.constellation} PRN ${s.svid}: ${s.snr} dB-Hz">
+        <div class="signal-bar-track">
+          <div class="signal-bar-fill signal-bar-fill--${css} ${usedClass}" style="height: ${pct}%"></div>
+        </div>
+        <span class="signal-bar-snr">${s.snr}</span>
+        <span class="signal-bar-prn">${s.svid}</span>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function updateConstellationCards(satellites: readonly SatelliteInfo[]): void {
+  const groups: Record<string, SatelliteInfo[]> = {
+    gps: [], navic: [], galileo: [], beidou: [],
+  };
+
+  for (const s of satellites) {
+    switch (s.constellation) {
+      case Constellation.GPS: groups.gps.push(s); break;
+      case Constellation.NavIC: groups.navic.push(s); break;
+      case Constellation.Galileo: groups.galileo.push(s); break;
+      case Constellation.BeiDou: groups.beidou.push(s); break;
+    }
+  }
+
+  for (const [color, sats] of Object.entries(groups)) {
+    const visible = sats.length;
+    const used = sats.filter(s => s.usedInFix).length;
+    const snrs = sats.map(s => s.snr);
+    const avgSnr = snrs.length > 0 ? (snrs.reduce((a, b) => a + b, 0) / snrs.length).toFixed(1) : '--';
+    const bestSnr = snrs.length > 0 ? Math.max(...snrs) : '--';
+
+    const badge = document.getElementById(`${color}-sat-badge`);
+    if (badge) badge.textContent = `${visible} sats`;
+
+    setDetailMetric(`${color}-visible`, `${visible}`, visible > 0);
+    setDetailMetric(`${color}-used`, `${used}`, used > 0);
+    setDetailMetric(`${color}-avg-snr`, `${avgSnr} dB-Hz`, snrs.length > 0);
+    setDetailMetric(`${color}-best-snr`, `${bestSnr} dB-Hz`, snrs.length > 0);
+  }
+}
+
+function setDetailMetric(id: string, value: string, hasData: boolean): void {
   const el = document.getElementById(id);
   if (el) {
     el.textContent = value;
