@@ -294,6 +294,30 @@ input:focus, select:focus, textarea:focus {
   background: var(--simulation-bg);
   border: 1px solid rgba(255, 87, 34, 0.3);
   animation: sim-pulse 3s ease-in-out infinite;
+  cursor: pointer;
+}
+
+.status-bar__hardware-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.status-bar__hardware-badge:hover {
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
 }
 
 .status-bar__clock {

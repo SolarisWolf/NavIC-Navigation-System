@@ -1,13 +1,13 @@
 /**
  * Status Bar Component
  *
- * Top bar showing: Logo, GNSS status, simulation badge, and clock.
- * Subscribes to GNSS service for status updates.
+ * Top bar showing: Logo, GNSS status, simulation / live hardware badge, and clock.
+ * Subscribes to GNSS service for status updates and dynamic source switching.
  */
 
 import { DEFAULT_CONFIG, FixType } from '@navic/shared-models';
 import { qs, formatTime } from '../utils/dom.js';
-import { gnssService } from '../services/gnss-service.js';
+import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { offlineService, OfflineStatus } from '../services/offline-service.js';
 
 export class StatusBar {
@@ -15,13 +15,14 @@ export class StatusBar {
   private clockInterval: number | null = null;
   private unsubscribeGNSS: (() => void) | null = null;
   private unsubscribeOffline: (() => void) | null = null;
+  private unsubscribeSource: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
     this.render();
     this.startClock();
     
-    // Subscribe to GNSS simulator state
+    // Subscribe to GNSS measurement state
     this.unsubscribeGNSS = gnssService.subscribe((m) => {
       this.updateGNSSIndicator(m.fixType);
     });
@@ -29,6 +30,11 @@ export class StatusBar {
     // Subscribe to Offline service state
     this.unsubscribeOffline = offlineService.subscribe((status) => {
       this.updateOfflineIndicator(status);
+    });
+
+    // Subscribe to Hardware Data Source mode changes
+    this.unsubscribeSource = gnssService.onSourceModeChange((mode) => {
+      this.updateSourceBadge(mode);
     });
   }
 
@@ -61,10 +67,7 @@ export class StatusBar {
       </div>
 
       <div class="status-bar__right">
-        ${DEFAULT_CONFIG.simulation.enabled
-          ? '<span class="status-bar__sim-badge">⚠ Simulation</span>'
-          : ''
-        }
+        <span class="status-bar__sim-badge" id="source-badge" title="Click to change hardware source">🧪 [SIMULATION MODE]</span>
         <span class="status-bar__clock" id="status-clock">${formatTime()}</span>
       </div>
     `;
@@ -74,6 +77,40 @@ export class StatusBar {
     offlineInd?.addEventListener('click', () => {
       window.location.hash = '#/diagnostics';
     });
+
+    // Click on source badge navigates to settings hardware configuration
+    const sourceBadge = qs('#source-badge', this.container);
+    sourceBadge?.addEventListener('click', () => {
+      window.location.hash = '#/settings';
+    });
+  }
+
+  private updateSourceBadge(mode: DataSourceMode): void {
+    const badge = qs('#source-badge', this.container);
+    if (!badge) return;
+
+    switch (mode) {
+      case DataSourceMode.Simulation:
+        badge.className = 'status-bar__sim-badge';
+        badge.textContent = '🧪 [SIMULATION MODE]';
+        badge.title = 'Data Source: Simulated Route. Click to switch hardware source.';
+        break;
+      case DataSourceMode.LiveLaptopGPS:
+        badge.className = 'status-bar__hardware-badge';
+        badge.textContent = '🛰️ [LIVE HARDWARE: LAPTOP]';
+        badge.title = 'Data Source: Real Laptop/Device Geolocation. Click to configure.';
+        break;
+      case DataSourceMode.AndroidHardware:
+        badge.className = 'status-bar__hardware-badge';
+        badge.textContent = '📱 [LIVE HARDWARE: ANDROID]';
+        badge.title = 'Data Source: Native Android GNSS & 50 Hz IMU. Click to configure.';
+        break;
+      case DataSourceMode.USBSerial:
+        badge.className = 'status-bar__hardware-badge';
+        badge.textContent = '🔌 [LIVE HARDWARE: USB NMEA]';
+        badge.title = 'Data Source: USB Serial NMEA Receiver. Click to configure.';
+        break;
+    }
   }
 
   private updateGNSSIndicator(fixType: FixType): void {
@@ -127,6 +164,9 @@ export class StatusBar {
     }
     if (this.unsubscribeOffline) {
       this.unsubscribeOffline();
+    }
+    if (this.unsubscribeSource) {
+      this.unsubscribeSource();
     }
   }
 }

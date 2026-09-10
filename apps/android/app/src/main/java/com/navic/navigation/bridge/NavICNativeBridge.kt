@@ -1,28 +1,99 @@
 package com.navic.navigation.bridge
 
 import android.content.Context
-import android.location.GnssStatus
 import android.location.LocationManager
 import android.os.Build
-import android.os.PowerManager
 import android.util.Log
 import android.webkit.JavascriptInterface
+import com.navic.navigation.sensors.AndroidLocationProvider
+import com.navic.navigation.sensors.AndroidSensorProvider
 import org.json.JSONObject
 
 /**
  * Bi-directional native Android to Web JavaScript bridge.
  * Exposes device hardware environment, NavIC constellation detection,
+ * real GPS/NavIC hardware location updates, 50 Hz IMU sensors,
  * wake-lock management, and foreground navigation notifications.
  */
 class NavICNativeBridge(
     private val context: Context,
     private val onWakeLockRequested: (Boolean) -> Unit,
     private val onNotificationUpdate: (String, String) -> Unit,
-    private val onStopGuidanceRequested: () -> Unit
+    private val onStopGuidanceRequested: () -> Unit,
+    private val onDispatchJs: (String) -> Unit
 ) {
     companion object {
         const val TAG = "NavICNativeBridge"
         const val JS_NAMESPACE = "NavICNative"
+    }
+
+    private var isHardwareActive = false
+
+    private val locationProvider = AndroidLocationProvider(
+        context = context,
+        onMeasurement = { jsonStr ->
+            dispatchToWeb("navic-hardware-gnss", jsonStr)
+        },
+        onStatus = { jsonStr ->
+            dispatchToWeb("navic-hardware-gnss-status", jsonStr)
+        }
+    )
+
+    private val sensorProvider = AndroidSensorProvider(
+        context = context,
+        onAccelerometer = { jsonStr ->
+            dispatchToWeb("navic-hardware-accel", jsonStr)
+        },
+        onGyroscope = { jsonStr ->
+            dispatchToWeb("navic-hardware-gyro", jsonStr)
+        },
+        onMagnetometer = { jsonStr ->
+            dispatchToWeb("navic-hardware-mag", jsonStr)
+        }
+    )
+
+    private fun dispatchToWeb(eventType: String, jsonDetail: String) {
+        val script = "window.dispatchEvent(new CustomEvent('$eventType', { detail: $jsonDetail }));"
+        onDispatchJs(script)
+    }
+
+    /**
+     * Starts native GNSS and 50 Hz IMU hardware sensors.
+     */
+    @JavascriptInterface
+    fun startHardwareSensors(): Boolean {
+        Log.i(TAG, "startHardwareSensors called")
+        val locStarted = locationProvider.start()
+        val sensorsStarted = sensorProvider.start()
+        isHardwareActive = locStarted || sensorsStarted
+        return isHardwareActive
+    }
+
+    /**
+     * Stops native GNSS and IMU hardware sensors.
+     */
+    @JavascriptInterface
+    fun stopHardwareSensors() {
+        Log.i(TAG, "stopHardwareSensors called")
+        locationProvider.stop()
+        sensorProvider.stop()
+        isHardwareActive = false
+    }
+
+    /**
+     * Returns whether hardware sensors are actively streaming.
+     */
+    @JavascriptInterface
+    fun isHardwareSensorsActive(): Boolean {
+        return isHardwareActive
+    }
+
+    /**
+     * Returns hardware sensor status JSON.
+     */
+    @JavascriptInterface
+    fun getHardwareSensorStatus(): String {
+        return sensorProvider.getStatusJson()
     }
 
     /**
@@ -40,6 +111,7 @@ class NavICNativeBridge(
             put("isNavICSupported", isNavICSupported())
             put("hasGnssMeasurements", hasRawGnssMeasurements())
             put("isHighRateSensorsSupported", Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            put("isHardwareActive", isHardwareActive)
         }
         return info.toString()
     }
@@ -56,7 +128,6 @@ class NavICNativeBridge(
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
             ?: return false
 
-        // Check if GPS/GNSS provider is available
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
 

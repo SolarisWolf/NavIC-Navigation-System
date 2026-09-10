@@ -104,7 +104,7 @@ npm run dev --workspace=@navic/web
 | 12 | Complete Web Simulation | ✅ Complete |
 | 13 | Offline Stress Testing | ✅ Complete |
 | 14 | Android Application | ✅ Complete |
-| 15 | Replace Simulators With Real Hardware | ⏳ In Progress |
+| 15 | Replace Simulators With Real Hardware | ✅ Complete |
 | 16 | Real NavIC Detection | ⏳ Pending |
 | 17 | Real Sensor Fusion | ⏳ Pending |
 | 18 | Final Offline Android Navigation | ⏳ Pending |
@@ -127,6 +127,7 @@ npm run dev --workspace=@navic/web
 - **Phase 12**: Complete Web Simulation Hub with 5 realistic Delhi NCR driving scenarios (Connaught Place to India Gate, Pragati Maidan Tunnel, Nehru Place Urban Canyon, NH-44 Highway Cruise, Off-Route Recalculation), continuous timeline seeking (0%–100% scrubber), playback speed scaling (0.5×–10×), multi-constellation mode toggling (All, NavIC-only, GPS-only), and hardware fault injections (15s Tunnel Outage with Dead Reckoning, Urban Canyon multipath degradation, 10s lateral Off-Route divergence).
 - **Phase 13**: Offline Stress Testing & Diagnostics Suite with 10k continuous 50 Hz EKF cycles (0.024ms latency, >42,000 ops/s), 60-second Dead Reckoning blackout stability test, 500 A* path calculations (0.75ms avg time, 100% success rate), 2k POI spatial searches (0.163ms avg search), standalone offline Service Worker (`sw.js`) caching application shell and MBTiles tiles, Status Bar offline indicator chip, and interactive in-browser Diagnostics screen (`#/diagnostics`) with 1-click stress suite runner, live progress, metric telemetry, and JSON certificate exporter.
 - **Phase 14**: Android Application Foundation with native Gradle project in `apps/android` (`compileSdk = 34`, `minSdk = 26`, OpenJDK 21), hardware permissions (`ACCESS_FINE_LOCATION`, `HIGH_SAMPLING_RATE_SENSORS`, `FOREGROUND_SERVICE`, `WAKE_LOCK`), `NavICNativeBridge.kt` with `@JavascriptInterface`, `MainActivity.kt` with `WebViewAssetLoader`, persistent `NavigationForegroundService.kt`, offline asset packaging tool `tools/copy-android-assets.js`, and successful 6.0 MB debug APK compilation (`app-debug.apk`).
+- **Phase 15**: Replace Simulators With Real Hardware featuring native Android GNSS tracking (`AndroidLocationProvider.kt` via `LocationManager` & `GnssStatus.Callback` capturing raw constellation telemetry and NavIC support), native 50 Hz IMU sensor streaming (`AndroidSensorProvider.kt` via `SensorManager` registering accelerometer, gyroscope, and magnetometer at 20ms intervals), bidirectional native bridge integration (`NavICNativeBridge.kt`), W3C Geolocation hardware provider (`BrowserGeolocationProvider.ts` in `@navic/gnss-core` enabling real laptop/device location testing), USB Serial NMEA 0183 offline decoder (`SerialNMEAProvider.ts`), dynamic Hardware Source Selector in Status Bar (`🧪 [SIMULATION MODE]` vs `🛰️ [LIVE HARDWARE: LAPTOP]` vs `📱 [LIVE HARDWARE: ANDROID]` vs `🔌 [LIVE HARDWARE: USB NMEA]`), Simulation Hub data source toggling, and Settings hardware configuration panel with live telemetry feeds.
 
 
 

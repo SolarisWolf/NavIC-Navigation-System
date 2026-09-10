@@ -101,6 +101,11 @@ class MainActivity : AppCompatActivity() {
             },
             onStopGuidanceRequested = {
                 NavigationForegroundService.stopService(this)
+            },
+            onDispatchJs = { jsScript ->
+                runOnUiThread {
+                    binding.webView.evaluateJavascript(jsScript, null)
+                }
             }
         )
     }
@@ -159,6 +164,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (::bridge.isInitialized) {
+            bridge.stopHardwareSensors()
+        }
         NavigationForegroundService.stopService(this)
         if (isWakeLockActive) {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

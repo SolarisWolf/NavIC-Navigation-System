@@ -51,3 +51,14 @@ export {
   OutlierFilter,
   type OutlierCheckResult,
 } from './engine/index.js';
+
+// Export real hardware providers
+export {
+  BrowserGeolocationProvider,
+  type BrowserGeolocationConfig,
+} from './providers/browser-geolocation-provider.js';
+
+export {
+  SerialNMEAProvider,
+  type NMEAParsedState,
+} from './providers/serial-nmea-provider.js';

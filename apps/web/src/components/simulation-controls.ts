@@ -7,7 +7,7 @@
  * (tunnel blackouts, urban canyon multipath, off-route divergence).
  */
 
-import { gnssService } from '../services/gnss-service.js';
+import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { imuService } from '../services/imu-service.js';
 import { SCENARIOS, getScenario } from '@navic/gnss-core';
 
@@ -44,8 +44,19 @@ export class SimulationControls {
       </div>
 
       <div class="sim-controls__body" id="sim-controls-body">
-        <!-- Scenario Selector & Info -->
+        <!-- Hardware / Data Source Mode Selector -->
         <div class="sim-controls__row">
+          <label class="sim-controls__label">Data Source</label>
+          <select class="sim-controls__select" id="sim-data-source" style="font-weight: 600;">
+            <option value="simulation" ${gnssService.getSourceMode() === 'simulation' ? 'selected' : ''}>🧪 Simulation Scenarios</option>
+            <option value="laptop-gps" ${gnssService.getSourceMode() === 'laptop-gps' ? 'selected' : ''}>🛰️ Live Laptop GPS (Hardware)</option>
+            <option value="android-hardware" ${gnssService.getSourceMode() === 'android-hardware' ? 'selected' : ''}>📱 Android Hardware (GNSS/IMU)</option>
+            <option value="usb-serial" ${gnssService.getSourceMode() === 'usb-serial' ? 'selected' : ''}>🔌 USB Serial NMEA (Hardware)</option>
+          </select>
+        </div>
+
+        <!-- Scenario Selector & Info -->
+        <div class="sim-controls__row" id="sim-scenario-row">
           <label class="sim-controls__label">Scenario</label>
           <select class="sim-controls__select" id="sim-scenario">
             ${scenarioKeys
@@ -143,6 +154,31 @@ export class SimulationControls {
       toggleBtn.textContent = body.classList.contains('sim-controls__body--collapsed') ? '+' : '−';
     });
 
+    // Data source selector (Phase 15: Hardware vs Simulation)
+    const dataSourceSelect = this.panel.querySelector('#sim-data-source') as HTMLSelectElement;
+    const statusBadge = this.panel.querySelector('#sim-status-badge') as HTMLElement;
+    dataSourceSelect?.addEventListener('change', async () => {
+      const mode = dataSourceSelect.value as DataSourceMode;
+      await gnssService.setSourceMode(mode);
+      if (mode !== DataSourceMode.Simulation) {
+        if (statusBadge) {
+          statusBadge.textContent = 'Hardware Live';
+          statusBadge.style.color = '#10b981';
+        }
+      } else {
+        if (statusBadge) {
+          statusBadge.textContent = 'Sim Ready';
+          statusBadge.style.color = '';
+        }
+      }
+    });
+
+    gnssService.onSourceModeChange((mode) => {
+      if (dataSourceSelect && dataSourceSelect.value !== mode) {
+        dataSourceSelect.value = mode;
+      }
+    });
+
     // Scenario selector
     const scenarioSelect = this.panel.querySelector('#sim-scenario') as HTMLSelectElement;
     const scenarioDesc = this.panel.querySelector('#sim-scenario-desc') as HTMLElement;
@@ -163,7 +199,6 @@ export class SimulationControls {
     });
 
     // Play
-    const statusBadge = this.panel.querySelector('#sim-status-badge') as HTMLElement;
     this.panel.querySelector('#sim-play')?.addEventListener('click', () => {
       if (sim.getIsPaused()) {
         sim.resume();

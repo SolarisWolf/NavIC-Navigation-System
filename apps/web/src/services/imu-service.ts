@@ -1,9 +1,9 @@
 /**
  * IMU Service
  *
- * Singleton service that manages the IMUSimulator instance and
- * distributes 3-axis sensor updates to UI subscribers.
- * Automatically synchronizes its physics state with the GNSS service.
+ * Singleton service that manages IMU sensor streams (Simulated 50 Hz physics or
+ * Native Android Hardware 50 Hz sensors) and distributes 3-axis sensor updates to UI subscribers.
+ * Automatically synchronizes its physics state with the active GNSS service.
  */
 
 import { 
@@ -12,7 +12,8 @@ import {
   type MagnetometerReading,
 } from '@navic/shared-models';
 import { IMUSimulator } from '@navic/sensor-fusion';
-import { gnssService } from './gnss-service.js';
+import { gnssService, DataSourceMode } from './gnss-service.js';
+import { androidBridgeService } from './android-bridge-service.js';
 
 export type AccelListener = (reading: AccelerometerReading) => void;
 export type GyroListener = (reading: GyroscopeReading) => void;
@@ -28,30 +29,66 @@ class IMUServiceImpl {
   constructor() {
     this.simulator = new IMUSimulator();
 
-    // Route measurements to UI listeners
+    // 1. Route simulator measurements
     this.simulator.onAccelerometer((m) => {
-      for (const listener of this.accelListeners) {
-        try { listener(m); } catch (e) {}
+      if (gnssService.getSourceMode() !== DataSourceMode.AndroidHardware) {
+        this.dispatchAccel(m);
       }
     });
 
     this.simulator.onGyroscope((m) => {
-      for (const listener of this.gyroListeners) {
-        try { listener(m); } catch (e) {}
+      if (gnssService.getSourceMode() !== DataSourceMode.AndroidHardware) {
+        this.dispatchGyro(m);
       }
     });
 
     this.simulator.onMagnetometer((m) => {
-      for (const listener of this.magListeners) {
-        try { listener(m); } catch (e) {}
+      if (gnssService.getSourceMode() !== DataSourceMode.AndroidHardware) {
+        this.dispatchMag(m);
       }
     });
 
-    // Synchronize physics with GNSS movement
+    // 2. Route native Android hardware sensor measurements
+    androidBridgeService.onHardwareAccel((reading) => {
+      if (gnssService.getSourceMode() === DataSourceMode.AndroidHardware) {
+        this.dispatchAccel(reading);
+      }
+    });
+
+    androidBridgeService.onHardwareGyro((reading) => {
+      if (gnssService.getSourceMode() === DataSourceMode.AndroidHardware) {
+        this.dispatchGyro(reading);
+      }
+    });
+
+    androidBridgeService.onHardwareMag((reading) => {
+      if (gnssService.getSourceMode() === DataSourceMode.AndroidHardware) {
+        this.dispatchMag(reading);
+      }
+    });
+
+    // Synchronize physics with GNSS movement during simulation or laptop tracking
     gnssService.subscribe((gnssMsg) => {
-      // Feed real-time speed and bearing to the IMU simulator for realistic physics
       this.simulator.updateVehicleState(gnssMsg.speed, gnssMsg.bearing);
     });
+  }
+
+  private dispatchAccel(m: AccelerometerReading): void {
+    for (const listener of this.accelListeners) {
+      try { listener(m); } catch (e) {}
+    }
+  }
+
+  private dispatchGyro(m: GyroscopeReading): void {
+    for (const listener of this.gyroListeners) {
+      try { listener(m); } catch (e) {}
+    }
+  }
+
+  private dispatchMag(m: MagnetometerReading): void {
+    for (const listener of this.magListeners) {
+      try { listener(m); } catch (e) {}
+    }
   }
 
   getSimulator(): IMUSimulator {

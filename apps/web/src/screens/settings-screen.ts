@@ -2,23 +2,74 @@
  * Settings Screen
  *
  * Displays application configuration values and provides interactive controls
- * for Voice Guidance, speech synthesis, and procedural audio chimes.
+ * for Voice Guidance, Speech synthesis, Procedural audio chimes, and
+ * Hardware Sensor Source selection (Simulation vs Live Laptop GPS vs Native Android Hardware vs USB NMEA).
  */
 
 import { DEFAULT_CONFIG, LogLevel } from '@navic/shared-models';
 import { voiceGuidanceService } from '../services/voice-guidance-service.js';
+import { gnssService, DataSourceMode } from '../services/gnss-service.js';
+import { androidBridgeService } from '../services/android-bridge-service.js';
 
 export function renderSettingsScreen(container: HTMLElement): void {
   const config = DEFAULT_CONFIG;
   const voiceSettings = voiceGuidanceService.getSettings();
   const availableVoices = voiceGuidanceService.getVoices();
+  const currentSourceMode = gnssService.getSourceMode();
+  const androidInfo = androidBridgeService.getDeviceInfo();
 
   container.innerHTML = `
     <div class="settings-screen screen">
       <div class="screen__header">
         <div>
           <h1 class="screen__title">Settings</h1>
-          <p class="screen__subtitle">System configuration, audio preferences, and offline parameters</p>
+          <p class="screen__subtitle">Hardware sensor sources, voice guidance, and system configuration</p>
+        </div>
+      </div>
+
+      <!-- Hardware & Sensor Sources (Phase 15) -->
+      <div class="settings-group settings-group--interactive" id="hardware-settings-group">
+        <div class="settings-group__header">
+          <span class="settings-group__header-icon">🛰️</span>
+          Hardware & Sensor Sources
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Active Data Source</span>
+            <span class="settings-interactive-row__desc">Switch dynamically between physical hardware and synthetic Delhi simulations</span>
+          </div>
+          <select id="setting-hardware-source" class="settings-select" style="min-width: 220px; font-weight: 600;">
+            <option value="simulation" ${currentSourceMode === 'simulation' ? 'selected' : ''}>🧪 Simulation Scenarios</option>
+            <option value="laptop-gps" ${currentSourceMode === 'laptop-gps' ? 'selected' : ''}>🛰️ Live Laptop GPS (Real Hardware)</option>
+            <option value="android-hardware" ${currentSourceMode === 'android-hardware' ? 'selected' : ''}>📱 Android Hardware (GNSS & IMU)</option>
+            <option value="usb-serial" ${currentSourceMode === 'usb-serial' ? 'selected' : ''}>🔌 External USB Serial / NMEA</option>
+          </select>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Live Telemetry Feed</span>
+            <span class="settings-interactive-row__desc" id="hardware-telemetry-coords">Monitoring telemetry stream...</span>
+          </div>
+          <span class="settings-row__value" id="hardware-mode-badge" style="color: #10b981; font-weight: 600;">
+            ${gnssService.isHardware() ? '● LIVE HARDWARE' : '● SIMULATION'}
+          </span>
+        </div>
+
+        ${androidInfo ? settingsRow('Android Host Hardware', `${androidInfo.brand} ${androidInfo.model} (API ${androidInfo.sdkVersion})`) : ''}
+        ${androidInfo ? settingsRow('NavIC Constellation', androidInfo.isNavICSupported ? '✅ Available (CONSTELLATION_IRNSS)' : '⚠️ Standard Multi-GNSS') : ''}
+        ${settingsRow('Browser Geolocation API', 'geolocation' in navigator ? '✅ Supported (Windows/Host Location)' : '❌ Not Available')}
+        ${settingsRow('Web Serial API', 'serial' in navigator ? '✅ Supported (USB NMEA Receiver)' : '⚠️ Unavailable')}
+
+        <div class="settings-test-action">
+          <button class="btn btn--secondary" id="btn-use-laptop-gps">
+            🛰️ Enable Laptop GPS
+          </button>
+          <button class="btn btn--secondary" id="btn-use-sim">
+            🧪 Enable Simulation
+          </button>
+          <span class="settings-test-status" id="hardware-switch-status"></span>
         </div>
       </div>
 
@@ -170,7 +221,66 @@ export function renderSettingsScreen(container: HTMLElement): void {
     </div>
   `;
 
-  // Bind interactive handlers
+  // Bind hardware source handlers
+  const hardwareSelect = document.getElementById('setting-hardware-source') as HTMLSelectElement | null;
+  const hardwareCoords = document.getElementById('hardware-telemetry-coords');
+  const hardwareBadge = document.getElementById('hardware-mode-badge');
+  const hardwareStatus = document.getElementById('hardware-switch-status');
+  const btnUseLaptop = document.getElementById('btn-use-laptop-gps');
+  const btnUseSim = document.getElementById('btn-use-sim');
+
+  const updateTelemetryDisplay = () => {
+    const lastM = gnssService.lastMeasurement;
+    if (hardwareCoords && lastM) {
+      const mode = gnssService.getSourceMode();
+      const prefix = mode === DataSourceMode.Simulation ? '[SIM]' : '[LIVE]';
+      hardwareCoords.textContent = `${prefix} ${lastM.latitude.toFixed(5)}°N, ${lastM.longitude.toFixed(5)}°E | ${(lastM.speed * 3.6).toFixed(1)} km/h | Acc: ±${lastM.horizontalAccuracy.toFixed(1)}m`;
+    }
+    if (hardwareBadge) {
+      if (gnssService.isHardware()) {
+        hardwareBadge.textContent = '● LIVE HARDWARE';
+        hardwareBadge.style.color = '#10b981';
+      } else {
+        hardwareBadge.textContent = '● SIMULATION';
+        hardwareBadge.style.color = '#ff9800';
+      }
+    }
+  };
+
+  updateTelemetryDisplay();
+  const telemetryInterval = setInterval(updateTelemetryDisplay, 1000);
+
+  hardwareSelect?.addEventListener('change', async () => {
+    const mode = hardwareSelect.value as DataSourceMode;
+    await gnssService.setSourceMode(mode);
+    if (hardwareStatus) {
+      hardwareStatus.textContent = `Source switched to ${mode}`;
+      setTimeout(() => { if (hardwareStatus) hardwareStatus.textContent = ''; }, 3000);
+    }
+    updateTelemetryDisplay();
+  });
+
+  btnUseLaptop?.addEventListener('click', async () => {
+    await gnssService.setSourceMode(DataSourceMode.LiveLaptopGPS);
+    if (hardwareSelect) hardwareSelect.value = 'laptop-gps';
+    if (hardwareStatus) {
+      hardwareStatus.textContent = 'Active: Live Laptop/Device GPS';
+      setTimeout(() => { if (hardwareStatus) hardwareStatus.textContent = ''; }, 3000);
+    }
+    updateTelemetryDisplay();
+  });
+
+  btnUseSim?.addEventListener('click', async () => {
+    await gnssService.setSourceMode(DataSourceMode.Simulation);
+    if (hardwareSelect) hardwareSelect.value = 'simulation';
+    if (hardwareStatus) {
+      hardwareStatus.textContent = 'Active: Simulation Scenarios';
+      setTimeout(() => { if (hardwareStatus) hardwareStatus.textContent = ''; }, 3000);
+    }
+    updateTelemetryDisplay();
+  });
+
+  // Bind voice handlers
   const voiceToggle = document.getElementById('setting-voice-enabled') as HTMLInputElement | null;
   const chimeToggle = document.getElementById('setting-chime-enabled') as HTMLInputElement | null;
   const volumeSlider = document.getElementById('setting-voice-volume') as HTMLInputElement | null;
