@@ -11,6 +11,7 @@ export {
   RouteInterpolator,
   type SimulationScenario,
   type Waypoint,
+  type InterpolatedState,
 } from './route-simulator.js';
 export {
   ALL_SATELLITES,

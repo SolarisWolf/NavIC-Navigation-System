@@ -101,8 +101,8 @@ npm run dev --workspace=@navic/web
 | 9 | Navigation Engine | ✅ Complete |
 | 10 | Re-routing | ✅ Complete |
 | 11 | Voice Navigation | ✅ Complete |
-| 12 | Complete Web Simulation | ⏳ In Progress |
-| 13 | Offline Stress Testing | ⏳ Pending |
+| 12 | Complete Web Simulation | ✅ Complete |
+| 13 | Offline Stress Testing | ⏳ In Progress |
 | 14 | Android Application | ⏳ Pending |
 | 15 | Replace Simulators With Real Hardware | ⏳ Pending |
 | 16 | Real NavIC Detection | ⏳ Pending |
@@ -124,6 +124,8 @@ npm run dev --workspace=@navic/web
 - **Phase 9**: Navigation Engine with high-performance planar map matching, route progress tracking (dynamic ETA, remaining distance, 25m arrival detection), turn-by-turn guidance engine with distance countdowns and proximity alerts, 3-sample debounced off-route detector, top Active Guidance HUD, and bottom Trip Statistics Bar.
 - **Phase 10**: Re-routing Engine with `ReroutingManager`, anti-thrashing cooldown throttling (3,000 ms), concurrent execution guards, instantaneous offline A* recalculation, atomic route hot-swapping in `NavigationEngine` with progress resets, dynamic `#map-nav-reroute` banner animation, and manual re-route trigger controls.
 - **Phase 11**: Voice Navigation with `VoicePromptGenerator`, multi-stage distance countdown triggering (300m Advance, 100m Approach, 30m Immediate), anti-repetition deduplication, offline procedural Web Audio API chimes (dual-tone harmonic turn, off-route alert, arrival chord), Web Speech API SpeechSynthesis with Indian English voice preference, Top HUD animated waveform badge, map `#btn-voice-toggle` one-tap mute control, and interactive Settings panel (switches, sliders, voice selector, test prompt).
+- **Phase 12**: Complete Web Simulation Hub with 5 realistic Delhi NCR driving scenarios (Connaught Place to India Gate, Pragati Maidan Tunnel, Nehru Place Urban Canyon, NH-44 Highway Cruise, Off-Route Recalculation), continuous timeline seeking (0%–100% scrubber), playback speed scaling (0.5×–10×), multi-constellation mode toggling (All, NavIC-only, GPS-only), and hardware fault injections (15s Tunnel Outage with Dead Reckoning, Urban Canyon multipath degradation, 10s lateral Off-Route divergence).
+
 
 
 

@@ -1,19 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Simulation Controls Styles
+   Simulation Controls Styles (Phase 12 Enhanced Simulation Hub)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .sim-controls {
   position: fixed;
   bottom: var(--space-4);
   right: var(--space-4);
-  width: 260px;
-  background: rgba(17, 24, 39, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-hover);
+  width: 320px;
+  background: rgba(13, 17, 23, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 87, 34, 0.3);
   border-radius: var(--radius-lg);
   z-index: var(--z-modal);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 15px rgba(255, 87, 34, 0.15);
   overflow: hidden;
+  transition: width var(--transition-fast);
 }
 
 .sim-controls__header {
@@ -21,14 +23,55 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-default);
-  background: rgba(255, 87, 34, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(255, 87, 34, 0.15) 0%, rgba(255, 87, 34, 0.02) 100%);
+}
+
+.sim-controls__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .sim-controls__title {
   font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--simulation-color);
+  font-weight: 700;
+  color: #ff7043;
+  letter-spacing: 0.3px;
+}
+
+.sim-controls__status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.sim-controls__status-badge--active {
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.sim-controls__status-badge--paused {
+  background: rgba(255, 179, 0, 0.15);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.3);
+}
+
+.sim-controls__status-badge--warning {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.sim-controls__status-badge--danger {
+  background: rgba(255, 82, 82, 0.2);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.4);
 }
 
 .sim-controls__toggle {
@@ -40,6 +83,8 @@
   border-radius: var(--radius-sm);
   font-size: var(--text-base);
   color: var(--text-secondary);
+  background: transparent;
+  border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -54,7 +99,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  max-height: 400px;
+  max-height: 480px;
   overflow-y: auto;
   transition: max-height var(--transition-base), padding var(--transition-base), opacity var(--transition-base);
 }
@@ -75,7 +120,7 @@
 
 .sim-controls__label {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -84,16 +129,58 @@
 
 .sim-controls__select {
   flex: 1;
-  padding: var(--space-1) var(--space-2);
+  padding: 4px 8px;
   font-size: var(--text-xs);
   background: var(--bg-input);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   cursor: pointer;
-  max-width: 160px;
+  max-width: 210px;
 }
 
+.sim-controls__scenario-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid #ff7043;
+}
+
+/* Scrubber */
+.sim-controls__scrubber-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sim-controls__scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.sim-controls__scrubber-pct {
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.sim-controls__scrubber-slider {
+  width: 100%;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+  margin: 4px 0 2px 0;
+}
+
+/* Playback buttons */
 .sim-controls__buttons {
   justify-content: center;
   gap: var(--space-2);
@@ -118,38 +205,16 @@
 }
 
 .sim-controls__btn--play {
-  background: rgba(0, 230, 118, 0.1);
-  color: var(--accent-secondary);
-  border-color: rgba(0, 230, 118, 0.2);
+  background: rgba(0, 230, 118, 0.12);
+  color: #00e676;
+  border-color: rgba(0, 230, 118, 0.3);
 }
 
 .sim-controls__btn--play:hover {
-  background: rgba(0, 230, 118, 0.2);
+  background: rgba(0, 230, 118, 0.25);
 }
 
-.sim-controls__btn--toggle {
-  min-width: 42px;
-  text-align: center;
-}
-
-.sim-controls__btn--active {
-  background: rgba(0, 230, 118, 0.1);
-  color: var(--accent-secondary);
-  border-color: rgba(0, 230, 118, 0.2);
-}
-
-.sim-controls__btn--outage {
-  width: 100%;
-  background: rgba(255, 82, 82, 0.08);
-  color: var(--accent-danger);
-  border-color: rgba(255, 82, 82, 0.2);
-  padding: var(--space-2);
-}
-
-.sim-controls__btn--outage:hover {
-  background: rgba(255, 82, 82, 0.15);
-}
-
+/* Speed Multipliers */
 .sim-controls__speed {
   display: flex;
   gap: 2px;
@@ -159,9 +224,9 @@
 }
 
 .sim-controls__speed-btn {
-  padding: var(--space-1) var(--space-2);
+  padding: 3px 6px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   background: var(--bg-input);
   color: var(--text-muted);
   border: none;
@@ -175,6 +240,70 @@
 }
 
 .sim-controls__speed-btn--active {
-  background: rgba(79, 140, 255, 0.15);
+  background: rgba(79, 140, 255, 0.25);
   color: var(--accent-primary);
+}
+
+/* Constellation Pill Buttons */
+.sim-controls__constellation-toggles {
+  display: flex;
+  gap: 3px;
+}
+
+.sim-controls__pill-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sim-controls__pill-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.sim-controls__pill-btn--active {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+  border-color: #00e5ff;
+}
+
+/* Fault Injections */
+.sim-controls__faults-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.sim-controls__faults-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.sim-controls__fault-btn {
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 82, 82, 0.08);
+  color: #ff8a80;
+  border: 1px solid rgba(255, 82, 82, 0.25);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.sim-controls__fault-btn:hover {
+  background: rgba(255, 82, 82, 0.2);
+  border-color: #ff5252;
+  color: #ffffff;
 }

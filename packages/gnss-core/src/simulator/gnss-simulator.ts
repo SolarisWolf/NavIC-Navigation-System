@@ -78,6 +78,8 @@ export class GNSSSimulator implements GNSSProvider {
   private speedMultiplier: number;
   private lastTimestamp: number = 0;
   private isPaused: boolean = false;
+  private offsetLat: number = 0;
+  private offsetLon: number = 0;
 
   // Last measurement for status queries
   private lastMeasurement: GNSSMeasurement | null = null;
@@ -229,6 +231,62 @@ export class GNSSSimulator implements GNSSProvider {
     return this.speedMultiplier;
   }
 
+  /** Seek to normalized position along route (0.0 to 1.0) */
+  seek(progressFraction: number): void {
+    this.routeInterpolator.seek(progressFraction);
+    this.lastTimestamp = Date.now();
+    this.logger.info(`Seek to progress: ${(progressFraction * 100).toFixed(1)}%`);
+  }
+
+  /** Get current route progress fraction (0.0 to 1.0) */
+  getProgress(): number {
+    return this.routeInterpolator.getProgress();
+  }
+
+  /** Get total distance in meters of active scenario */
+  getTotalDistance(): number {
+    return this.routeInterpolator.getTotalDistance();
+  }
+
+  /** Get active scenario details */
+  getCurrentScenario(): SimulationScenario {
+    return this.routeInterpolator.getScenario();
+  }
+
+  /** Set multi-constellation mode */
+  setConstellationMode(mode: 'all' | 'navic-only' | 'gps-only'): void {
+    this.disabledConstellations.clear();
+    if (mode === 'navic-only') {
+      this.disabledConstellations.add(Constellation.GPS);
+      this.disabledConstellations.add(Constellation.Galileo);
+      this.disabledConstellations.add(Constellation.BeiDou);
+      this.disabledConstellations.add(Constellation.GLONASS);
+      this.logger.info('Constellation mode set to: NavIC-only');
+    } else if (mode === 'gps-only') {
+      this.disabledConstellations.add(Constellation.NavIC);
+      this.disabledConstellations.add(Constellation.Galileo);
+      this.disabledConstellations.add(Constellation.BeiDou);
+      this.disabledConstellations.add(Constellation.GLONASS);
+      this.logger.info('Constellation mode set to: GPS-only');
+    } else {
+      this.logger.info('Constellation mode set to: All Constellations');
+    }
+  }
+
+  /** Inject an artificial coordinate offset (e.g. to test off-route deviation) */
+  injectPositionOffset(dLat: number, dLon: number): void {
+    this.offsetLat = dLat;
+    this.offsetLon = dLon;
+    this.logger.warn(`Injected coordinate offset: dLat=${dLat}, dLon=${dLon}`);
+  }
+
+  /** Clear any injected coordinate offset */
+  clearPositionOffset(): void {
+    this.offsetLat = 0;
+    this.offsetLon = 0;
+    this.logger.info('Cleared injected coordinate offset');
+  }
+
   /** Pause the simulation. */
   pause(): void {
     this.isPaused = true;
@@ -251,6 +309,8 @@ export class GNSSSimulator implements GNSSProvider {
   reset(): void {
     this.routeInterpolator.reset();
     this.isOutage = false;
+    this.offsetLat = 0;
+    this.offsetLon = 0;
     this.lastMeasurement = null;
     this.lastTimestamp = Date.now();
     this.logger.info('Reset');
@@ -267,8 +327,11 @@ export class GNSSSimulator implements GNSSProvider {
     // Advance position along route
     const pos = this.routeInterpolator.update(dtMs);
 
-    // During outage, emit NoFix measurement
-    if (this.isOutage) {
+    const effectiveLat = pos.latitude + this.offsetLat;
+    const effectiveLon = pos.longitude + this.offsetLon;
+
+    // During manual outage or tunnel passage, emit NoFix measurement
+    if (this.isOutage || pos.isTunnel) {
       const measurement: GNSSMeasurement = {
         timestamp: now,
         latitude: 0,
@@ -287,13 +350,17 @@ export class GNSSSimulator implements GNSSProvider {
       return;
     }
 
+    // Degrade quality in urban canyon environments
+    const currentQuality = pos.isUrbanCanyon ? 'weak' : this.signalQuality;
+    const currentNoiseSigma = pos.isUrbanCanyon ? this.config.positionNoiseSigma * 3 : this.config.positionNoiseSigma;
+
     // Compute visible satellites
     const satellites = computeVisibleSatellites(
-      pos.latitude,
-      pos.longitude,
+      effectiveLat,
+      effectiveLon,
       now,
       this.disabledConstellations,
-      this.signalQuality,
+      currentQuality,
     );
 
     // Count satellites used in fix
@@ -304,17 +371,17 @@ export class GNSSSimulator implements GNSSProvider {
 
     // Apply noise to position
     const [noisyLat, noisyLon] = addPositionNoise(
-      pos.latitude,
-      pos.longitude,
-      this.config.positionNoiseSigma,
+      effectiveLat,
+      effectiveLon,
+      currentNoiseSigma,
     );
-    const noisyAlt = addAltitudeNoise(pos.altitude, this.config.positionNoiseSigma);
+    const noisyAlt = addAltitudeNoise(pos.altitude, currentNoiseSigma);
     const noisySpeed = addSpeedNoise(pos.speed, this.config.speedNoiseSigma);
     const noisyBearing = addBearingNoise(pos.bearing, this.config.bearingNoiseSigma);
 
     // Estimate accuracy
     const horizontalAccuracy = estimateAccuracy(
-      this.config.positionNoiseSigma,
+      currentNoiseSigma,
       usedInFix,
     );
     const verticalAccuracy = horizontalAccuracy * 1.5;
