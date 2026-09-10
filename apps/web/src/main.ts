@@ -15,6 +15,8 @@ import { renderSatelliteScreen } from './screens/satellite-screen.js';
 import { renderSensorScreen } from './screens/sensor-screen.js';
 import { renderRouteScreen } from './screens/route-screen.js';
 import { renderSettingsScreen } from './screens/settings-screen.js';
+import { renderDiagnosticsScreen } from './screens/diagnostics-screen.js';
+import { offlineService } from './services/offline-service.js';
 
 // ─── Logger Setup ────────────────────────────────────────────────────────────
 
@@ -82,6 +84,13 @@ function initApp(): void {
     label: 'Settings',
     icon: '⚙️',
     render: renderSettingsScreen,
+  });
+
+  router.addRoute({
+    path: '/diagnostics',
+    label: 'Diagnostics',
+    icon: '⚡',
+    render: renderDiagnosticsScreen,
   });
 
   // Initialize components

@@ -12,7 +12,8 @@
   "dependencies": {
     "@navic/shared-models": "*",
     "@navic/sensor-fusion": "*",
-    "@navic/routing-core": "*"
+    "@navic/routing-core": "*",
+    "@navic/map-core": "*"
   },
   "devDependencies": {
     "typescript": "^5.5.0"

@@ -8,11 +8,13 @@
 import { DEFAULT_CONFIG, FixType } from '@navic/shared-models';
 import { qs, formatTime } from '../utils/dom.js';
 import { gnssService } from '../services/gnss-service.js';
+import { offlineService, OfflineStatus } from '../services/offline-service.js';
 
 export class StatusBar {
   private container: HTMLElement;
   private clockInterval: number | null = null;
   private unsubscribeGNSS: (() => void) | null = null;
+  private unsubscribeOffline: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -22,6 +24,11 @@ export class StatusBar {
     // Subscribe to GNSS simulator state
     this.unsubscribeGNSS = gnssService.subscribe((m) => {
       this.updateGNSSIndicator(m.fixType);
+    });
+
+    // Subscribe to Offline service state
+    this.unsubscribeOffline = offlineService.subscribe((status) => {
+      this.updateOfflineIndicator(status);
     });
   }
 
@@ -47,6 +54,10 @@ export class StatusBar {
           <span class="status-bar__dot"></span>
           <span>Nav: Idle</span>
         </div>
+        <div class="status-bar__indicator" id="offline-indicator" style="cursor: pointer;" title="Click to view Diagnostics">
+          <span class="status-bar__dot status-bar__dot--active" id="offline-dot"></span>
+          <span id="offline-text">Offline Ready</span>
+        </div>
       </div>
 
       <div class="status-bar__right">
@@ -57,6 +68,12 @@ export class StatusBar {
         <span class="status-bar__clock" id="status-clock">${formatTime()}</span>
       </div>
     `;
+
+    // Click on offline indicator navigates to diagnostics
+    const offlineInd = qs('#offline-indicator', this.container);
+    offlineInd?.addEventListener('click', () => {
+      window.location.hash = '#/diagnostics';
+    });
   }
 
   private updateGNSSIndicator(fixType: FixType): void {
@@ -70,6 +87,24 @@ export class StatusBar {
       } else {
         dot.className = 'status-bar__dot status-bar__dot--active';
         text.textContent = `GNSS: ${fixType === FixType.Fix3D ? '3D Fix' : '2D Fix'}`;
+      }
+    }
+  }
+
+  private updateOfflineIndicator(status: OfflineStatus): void {
+    const dot = qs('#offline-dot', this.container);
+    const text = qs('#offline-text', this.container);
+
+    if (dot && text) {
+      if (status.isSimulatedOffline) {
+        dot.className = 'status-bar__dot status-bar__dot--warning';
+        text.textContent = 'Offline Mode';
+      } else if (!status.isOnline) {
+        dot.className = 'status-bar__dot status-bar__dot--active';
+        text.textContent = 'Offline Cache';
+      } else {
+        dot.className = 'status-bar__dot status-bar__dot--active';
+        text.textContent = 'Offline Ready';
       }
     }
   }
@@ -89,6 +124,9 @@ export class StatusBar {
     }
     if (this.unsubscribeGNSS) {
       this.unsubscribeGNSS();
+    }
+    if (this.unsubscribeOffline) {
+      this.unsubscribeOffline();
     }
   }
 }

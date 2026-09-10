@@ -323,6 +323,21 @@ export class ExtendedKalmanFilter {
   }
 
   /**
+   * Returns the main diagonal elements of the 7x7 covariance matrix P.
+   * Useful for uncertainty telemetry, sanity checks, and stress diagnostics.
+   */
+  public getCovarianceDiagonal(): number[] {
+    return this.P.map((row, i) => row[i]);
+  }
+
+  /**
+   * Returns a copy of the 7x7 covariance matrix P.
+   */
+  public getCovariance(): Matrix {
+    return this.P.map(row => [...row]);
+  }
+
+  /**
    * Symmetrizes the error covariance matrix P to maintain numerical stability.
    */
   private symmetrizeP(): void {

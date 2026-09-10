@@ -30,7 +30,7 @@ export class Sidebar {
       ['/dashboard', '/map', '/satellites', '/sensors'].includes(r.path)
     );
     const systemRoutes = routes.filter(r =>
-      ['/route', '/settings'].includes(r.path)
+      ['/route', '/settings', '/diagnostics'].includes(r.path)
     );
 
     this.container.innerHTML = `
@@ -39,13 +39,13 @@ export class Sidebar {
         ${mainRoutes.map(r => this.renderItem(r, currentPath)).join('')}
 
         <div class="sidebar__divider"></div>
-        <div class="sidebar__section-title">Planning</div>
+        <div class="sidebar__section-title">System & Tools</div>
         ${systemRoutes.map(r => this.renderItem(r, currentPath)).join('')}
       </div>
 
       <div class="sidebar__footer">
         <span class="sidebar__version">${DEFAULT_CONFIG.appName} v${DEFAULT_CONFIG.version}</span>
-        <span>Phase 1 — Web Shell</span>
+        <span>Phase 13 — Offline Stress</span>
       </div>
     `;
 
