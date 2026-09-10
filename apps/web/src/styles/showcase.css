@@ -1,0 +1,406 @@
+/**
+ * NavIC Navigation — Showcase & Demonstration Styles
+ *
+ * Phase 20: Premium glassmorphic exhibition styling for the 20-Phase Milestone Matrix,
+ * interactive Guided Tour HUD, step dots, and architecture topology.
+ */
+
+.showcase-screen {
+  padding: 1.5rem 2rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  color: #f1f5f9;
+}
+
+/* ─── Hero Section ────────────────────────────────────────────────────────── */
+.showcase-hero {
+  background: radial-gradient(circle at top left, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.9) 60%),
+              linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 16px;
+  padding: 2.25rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.showcase-hero::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(0, 230, 118, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.showcase-hero-content {
+  max-width: 780px;
+}
+
+.showcase-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(0, 230, 118, 0.15);
+  border: 1px solid #00e676;
+  color: #00e676;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+  margin-bottom: 0.85rem;
+  text-transform: uppercase;
+}
+
+.showcase-hero-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f8fafc;
+  margin: 0 0 0.65rem 0;
+  line-height: 1.2;
+}
+
+.showcase-hero-subtitle {
+  font-size: 1.05rem;
+  color: #cbd5e1;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.6;
+}
+
+.showcase-hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-showcase-tour {
+  background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%) !important;
+  color: #060a14 !important;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.75rem 1.6rem;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.35);
+  transition: all 0.2s ease;
+  border: none !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-showcase-tour:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 230, 118, 0.5);
+}
+
+/* ─── Active Guided Tour Controller Card ──────────────────────────────────── */
+.showcase-tour-panel {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+.tour-step-pills {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.tour-step-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tour-step-pill:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.tour-step-pill.active {
+  background: #38bdf8;
+  color: #060a14;
+  border-color: #38bdf8;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
+}
+
+.tour-narrative-card {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tour-narrative-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tour-step-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tour-step-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.tour-narration-text {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tour-tech-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.tour-tech-chip {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tour-tech-label {
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tour-tech-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.tour-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tour-controls-left {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ─── 20-Phase Milestone Exhibition Matrix ────────────────────────────────── */
+.showcase-matrix-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.showcase-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.showcase-section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.showcase-section-subtitle {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.showcase-milestones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.25rem;
+}
+
+.showcase-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.showcase-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.showcase-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.showcase-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.showcase-phase-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+}
+
+.showcase-status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.showcase-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.showcase-card-desc {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.showcase-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.showcase-card-tag {
+  font-size: 0.68rem;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.showcase-card-action {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+}
+
+/* ─── Architecture Topology Card ─────────────────────────────────────────── */
+.showcase-arch-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.showcase-arch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.showcase-arch-box {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.showcase-arch-box-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.showcase-arch-box-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}

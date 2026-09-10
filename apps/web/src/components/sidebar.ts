@@ -30,7 +30,7 @@ export class Sidebar {
       ['/dashboard', '/map', '/satellites', '/sensors'].includes(r.path)
     );
     const systemRoutes = routes.filter(r =>
-      ['/route', '/settings', '/diagnostics'].includes(r.path)
+      ['/route', '/settings', '/diagnostics', '/showcase'].includes(r.path)
     );
 
     this.container.innerHTML = `
@@ -45,7 +45,7 @@ export class Sidebar {
 
       <div class="sidebar__footer">
         <span class="sidebar__version">${DEFAULT_CONFIG.appName} v${DEFAULT_CONFIG.version}</span>
-        <span>Phase 13 — Offline Stress</span>
+        <span>Phase 20 — Production Verified</span>
       </div>
     `;
 
