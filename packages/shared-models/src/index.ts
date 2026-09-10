@@ -17,7 +17,7 @@ export {
   type GNSSStatusCallback,
   type GNSSStatus,
   type GNSSProvider,
-} from './gnss.types.js';
+} from './gnss.types';
 
 // ─── GNSS Engine & DOP Types ────────────────────────────────────────────────
 export {
@@ -26,7 +26,7 @@ export {
   type PositionEngineConfig,
   type GNSSPositionCallback,
   type GNSSLossOfFixCallback,
-} from './gnss-engine.types.js';
+} from './gnss-engine.types';
 
 // ─── IMU Types ───────────────────────────────────────────────────────────────
 export {
@@ -40,7 +40,7 @@ export {
   type MagnetometerCallback,
   type IMUStatus,
   type IMUProvider,
-} from './imu.types.js';
+} from './imu.types';
 
 // ─── Sensor Fusion & EKF Types ───────────────────────────────────────────────
 export {
@@ -49,7 +49,7 @@ export {
   type SensorFusionStatus,
   type FusedPositionCallback,
   type SensorFusionStatusCallback,
-} from './sensor-fusion.types.js';
+} from './sensor-fusion.types';
 
 // ─── Navigation Types ────────────────────────────────────────────────────────
 export {
@@ -62,7 +62,7 @@ export {
   type Route,
   NavigationMode,
   type NavigationState,
-} from './navigation.types.js';
+} from './navigation.types';
 
 // ─── Map Types ───────────────────────────────────────────────────────────────
 export {
@@ -73,7 +73,7 @@ export {
   type POI,
   type MapDisplayConfig,
   type MapViewState,
-} from './map.types.js';
+} from './map.types';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 export {
@@ -84,14 +84,14 @@ export {
   type NavigationConfig,
   type AppConfig,
   DEFAULT_CONFIG,
-} from './config.types.js';
+} from './config.types';
 
 // ─── Logger ──────────────────────────────────────────────────────────────────
 export {
   Logger,
   type LoggerOptions,
   type LogOutput,
-} from './logger.js';
+} from './logger';
 
 // ─── Errors ──────────────────────────────────────────────────────────────────
 export {
@@ -106,7 +106,7 @@ export {
   RoutingErrorCode,
   MapErrorCode,
   FusionErrorCode,
-} from './errors.js';
+} from './errors';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 export {
@@ -119,4 +119,4 @@ export {
   generateId,
   formatDistance,
   formatDuration,
-} from './utils.js';
+} from './utils';
