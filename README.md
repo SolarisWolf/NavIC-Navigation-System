@@ -105,8 +105,8 @@ npm run dev --workspace=@navic/web
 | 13 | Offline Stress Testing | ✅ Complete |
 | 14 | Android Application | ✅ Complete |
 | 15 | Replace Simulators With Real Hardware | ✅ Complete |
-| 16 | Real NavIC Detection | ⏳ Pending |
-| 17 | Real Sensor Fusion | ⏳ Pending |
+| 16 | Real NavIC Detection | ✅ Complete |
+| 17 | Battery & Background Optimization | ✅ Complete |
 | 18 | Final Offline Android Navigation | ⏳ Pending |
 | 19 | Performance & Reliability Testing | ⏳ Pending |
 | 20 | Final Validation & Demonstration | ⏳ Pending |
