@@ -97,7 +97,7 @@ npm run dev --workspace=@navic/web
 | 5 | Extended Kalman Filter / Sensor Fusion | ✅ Complete |
 | 6 | GNSS Position Engine | ✅ Complete |
 | 7 | Offline POI Database | ✅ Complete |
-| 8 | Offline Routing Engine | ⏳ Pending |
+| 8 | Offline Routing Engine | ⏳ In Progress |
 | 9 | Navigation Engine | ⏳ Pending |
 | 10 | Re-routing | ⏳ Pending |
 | 11 | Voice Navigation | ⏳ Pending |
