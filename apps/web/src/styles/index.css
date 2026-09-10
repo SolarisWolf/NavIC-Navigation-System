@@ -1,0 +1,69 @@
+/* NavIC Navigation — Base Styles (Phase 0 placeholder) */
+
+:root {
+  --color-bg: #0a0e1a;
+  --color-surface: #141827;
+  --color-primary: #4f8cff;
+  --color-accent: #00e676;
+  --color-warning: #ff9800;
+  --color-text: #e0e0e0;
+  --color-text-muted: #8892a4;
+  --color-simulation: #ff5722;
+  --font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phase-placeholder {
+  text-align: center;
+  padding: 3rem;
+  border: 1px solid rgba(79, 140, 255, 0.2);
+  border-radius: 16px;
+  background: var(--color-surface);
+  max-width: 480px;
+}
+
+.phase-placeholder h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.phase-placeholder p {
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.simulation-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--color-simulation);
+  border: 1px solid var(--color-simulation);
+  text-transform: uppercase;
+}
+
+.status {
+  font-size: 0.875rem;
+}

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "incremental": true,
+    "paths": {
+      "@navic/shared-models": ["./packages/shared-models/src"],
+      "@navic/gnss-core": ["./packages/gnss-core/src"],
+      "@navic/sensor-fusion": ["./packages/sensor-fusion/src"],
+      "@navic/navigation-core": ["./packages/navigation-core/src"],
+      "@navic/routing-core": ["./packages/routing-core/src"],
+      "@navic/map-core": ["./packages/map-core/src"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
