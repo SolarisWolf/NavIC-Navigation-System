@@ -66,6 +66,11 @@ export {
   VoicePromptGenerator,
 } from './voice/voice-prompt-generator';
 
+// Geo URI Intent Parsing
+export {
+  GeoUriParser,
+} from './intents/geo-uri-parser';
+
 export {
   type VoicePrompt,
   type VoicePromptStage,
@@ -85,6 +90,9 @@ export type {
   Route,
   RoutePoint,
   Coordinate,
+  ActiveTripState,
+  GeoIntentPayload,
+  AndroidPlatformSettings,
 } from '@navic/shared-models';
 
 export {
@@ -92,4 +100,5 @@ export {
   ManeuverType,
   RoutingProfile,
   RouteOptimization,
+  DEFAULT_ANDROID_PLATFORM_SETTINGS,
 } from '@navic/shared-models';

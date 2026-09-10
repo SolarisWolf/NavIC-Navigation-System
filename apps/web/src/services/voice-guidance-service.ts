@@ -11,6 +11,8 @@ import {
   type VoiceSettings,
   DEFAULT_VOICE_SETTINGS,
 } from '@navic/navigation-core';
+import { androidBridgeService } from './android-bridge-service';
+import { tripRecoveryService } from './trip-recovery-service';
 
 export type VoiceSpeakingListener = (isSpeaking: boolean, text: string) => void;
 export type VoiceSettingsListener = (settings: VoiceSettings) => void;
@@ -125,6 +127,15 @@ export class VoiceGuidanceService {
   public async playChime(type: 'turn' | 'alert' | 'arrival'): Promise<void> {
     if (this.settings.muted || !this.settings.chimeEnabled) return;
 
+    if (tripRecoveryService.getSettings().audioDucking) {
+      androidBridgeService.requestAudioFocus();
+      setTimeout(() => {
+        if (!this.isSpeaking) {
+          androidBridgeService.abandonAudioFocus();
+        }
+      }, 700);
+    }
+
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
@@ -183,12 +194,21 @@ export class VoiceGuidanceService {
   public async speak(prompt: VoicePrompt): Promise<void> {
     if (this.settings.muted) return;
 
+    if (tripRecoveryService.getSettings().audioDucking) {
+      androidBridgeService.requestAudioFocus();
+    }
+
     // Play chime prior to speech if enabled
     if (prompt.chimeType !== 'none') {
       await this.playChime(prompt.chimeType);
     }
 
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      if (tripRecoveryService.getSettings().audioDucking) {
+        androidBridgeService.abandonAudioFocus();
+      }
+      return;
+    }
 
     // High priority prompts cancel existing speech immediately
     if (prompt.priority === 'HIGH' && this.isSpeaking) {
@@ -213,6 +233,9 @@ export class VoiceGuidanceService {
       this.isSpeaking = false;
       this.currentText = '';
       this.notifySpeakingChanged(false, '');
+      if (tripRecoveryService.getSettings().audioDucking) {
+        androidBridgeService.abandonAudioFocus();
+      }
     };
 
     utterance.onend = cleanup;
@@ -234,6 +257,9 @@ export class VoiceGuidanceService {
     this.isSpeaking = false;
     this.currentText = '';
     this.notifySpeakingChanged(false, '');
+    if (tripRecoveryService.getSettings().audioDucking) {
+      androidBridgeService.abandonAudioFocus();
+    }
   }
 
   /**

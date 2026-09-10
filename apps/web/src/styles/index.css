@@ -562,3 +562,163 @@ body.power-saver-active .card {
   background: #111827 !important;
 }
 
+/* ─── Trip Recovery Banner (Phase 18) ─────────────────────────────────────── */
+.map-trip-recovery-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 90%;
+  max-width: 480px;
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 16px rgba(79, 140, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: slide-down 0.3s ease-out;
+}
+
+.trip-recovery-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.trip-recovery-icon {
+  font-size: 1.6rem;
+}
+
+.trip-recovery-title {
+  font-weight: 700;
+  font-size: var(--text-md);
+  color: var(--text-primary);
+}
+
+.trip-recovery-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.trip-recovery-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* ─── Modal Overlay & Card (Phase 18) ────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fade-in 0.2s ease-out;
+}
+
+.modal-card {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.modal-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: var(--space-2);
+}
+
+.modal-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-5);
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* ─── Settings Buttons & Divider (Phase 18) ──────────────────────────────── */
+.settings-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.settings-btn--primary {
+  background: linear-gradient(135deg, #4f8cff, #6366f1);
+  color: #fff;
+}
+
+.settings-btn--primary:hover {
+  background: linear-gradient(135deg, #6da3ff, #818cf8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.settings-btn--outline {
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid var(--border-color, #334155);
+}
+
+.settings-btn--outline:hover {
+  background: rgba(79, 140, 255, 0.08);
+  color: var(--accent-primary, #4f8cff);
+  border-color: var(--accent-primary, #4f8cff);
+}
+
+.settings-group__divider {
+  height: 1px;
+  background: var(--border-color, #334155);
+  margin: var(--space-3, 0.75rem) 0;
+  opacity: 0.5;
+}
+
+.btn--danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn--danger:hover {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

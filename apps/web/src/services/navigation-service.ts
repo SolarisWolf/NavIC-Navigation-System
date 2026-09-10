@@ -12,6 +12,7 @@ import {
   type NavigationState,
   type Route,
   type NavigationInstruction,
+  type ActiveTripState,
   NavigationMode,
 } from '@navic/shared-models';
 import {
@@ -32,6 +33,8 @@ import { fusionService } from './fusion-service.js';
 import { routingService } from './routing-service.js';
 import { voiceGuidanceService } from './voice-guidance-service.js';
 import { powerService } from './power-service.js';
+import { androidBridgeService } from './android-bridge-service.js';
+import { tripRecoveryService } from './trip-recovery-service.js';
 
 class NavigationServiceImpl {
   private engine: NavigationEngine;
@@ -74,6 +77,29 @@ class NavigationServiceImpl {
             state.nextInstruction.description || 'Continue on route',
             stats
           );
+          androidBridgeService.updateNavigationNotification(
+            state.nextInstruction.description || 'Continue on route',
+            `${remainingKm} km`,
+            `${etaMins} min`,
+            state.nextInstruction.roadName || ''
+          );
+        }
+
+        // Persist active trip state for crash/relaunch recovery
+        if (state.route) {
+          const destName = state.route.instructions[state.route.instructions.length - 1]?.roadName || 'Destination';
+          tripRecoveryService.saveTrip({
+            route: state.route,
+            destinationName: destName,
+            destinationCoord: state.route.destination,
+            startedAt: Date.now(),
+            savedAt: Date.now(),
+            lastMatchedSegment: (this.engine as any).lastMatchedSegment ?? 0,
+            distanceTraveled: state.progress ? state.route.distance * state.progress : 0,
+            remainingDistance: state.remainingDistance ?? 0,
+            isNavigating: true,
+            voiceMuted: voiceGuidanceService.getSettings().muted,
+          });
         }
       }
 
@@ -114,6 +140,10 @@ class NavigationServiceImpl {
 
     this.engine.onArrival((dest) => {
       this.voiceGenerator.notifyArrival();
+      if (tripRecoveryService.getSettings().immersiveDrivingMode) {
+        androidBridgeService.setImmersiveMode(false);
+      }
+      tripRecoveryService.clearTrip();
 
       for (const listener of this.arrivalListeners) {
         try {
@@ -224,7 +254,21 @@ class NavigationServiceImpl {
     // Acquire wake lock & initialize foreground notification
     powerService.onNavigationStarted(destName);
 
+    // Engage immersive driving mode if enabled
+    if (tripRecoveryService.getSettings().immersiveDrivingMode) {
+      androidBridgeService.setImmersiveMode(true);
+    }
+
     return state;
+  }
+
+  /**
+   * Resumes a previously active trip restored from local storage.
+   */
+  public resumeTrip(trip: ActiveTripState): NavigationState {
+    routingService.setCurrentRoute(trip.route);
+    tripRecoveryService.markTripHandled();
+    return this.startNavigation(trip.route);
   }
 
   /**
@@ -235,6 +279,10 @@ class NavigationServiceImpl {
     this.voiceGenerator.reset();
     voiceGuidanceService.cancel();
     powerService.onNavigationStopped();
+    if (tripRecoveryService.getSettings().immersiveDrivingMode) {
+      androidBridgeService.setImmersiveMode(false);
+    }
+    tripRecoveryService.clearTrip();
     return this.engine.stopNavigation();
   }
 

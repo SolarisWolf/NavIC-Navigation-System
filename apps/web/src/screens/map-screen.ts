@@ -26,6 +26,9 @@ import { routingService } from '../services/routing-service.js';
 import { navigationService } from '../services/navigation-service.js';
 import { voiceGuidanceService } from '../services/voice-guidance-service.js';
 import { powerService } from '../services/power-service.js';
+import { androidBridgeService } from '../services/android-bridge-service.js';
+import { tripRecoveryService } from '../services/trip-recovery-service.js';
+import { GeoUriParser } from '@navic/navigation-core';
 import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
 
 let map: L.Map | null = null;
@@ -44,6 +47,8 @@ let unsubscribeRoute: (() => void) | null = null;
 let unsubscribeNav: (() => void) | null = null;
 let unsubscribeVoiceSpeaking: (() => void) | null = null;
 let unsubscribeVoiceSettings: (() => void) | null = null;
+let unsubscribeGeoIntent: (() => void) | null = null;
+let unsubscribeBackPress: (() => void) | null = null;
 
 let isFollowing = true;
 let isInitialized = false;
@@ -126,6 +131,14 @@ export function renderMapScreen(container: HTMLElement): void {
   if (unsubscribeVoiceSettings) {
     unsubscribeVoiceSettings();
     unsubscribeVoiceSettings = null;
+  }
+  if (unsubscribeGeoIntent) {
+    unsubscribeGeoIntent();
+    unsubscribeGeoIntent = null;
+  }
+  if (unsubscribeBackPress) {
+    unsubscribeBackPress();
+    unsubscribeBackPress = null;
   }
   if (map) {
     map.remove();
@@ -236,6 +249,33 @@ export function renderMapScreen(container: HTMLElement): void {
           <button class="btn-stop-nav" id="btn-stop-nav-trip">
             ⏹️ Stop
           </button>
+        </div>
+
+        <!-- Trip Recovery Floating Banner (Phase 18) -->
+        <div class="map-trip-recovery-banner" id="map-trip-recovery-banner" style="display: none;">
+          <div class="trip-recovery-header">
+            <span class="trip-recovery-icon">🔄</span>
+            <div class="trip-recovery-text">
+              <div class="trip-recovery-title">Resume Active Navigation?</div>
+              <div class="trip-recovery-subtitle" id="trip-recovery-subtitle">Restored unfinished trip</div>
+            </div>
+          </div>
+          <div class="trip-recovery-actions">
+            <button class="btn btn--primary btn--sm" id="btn-resume-trip">▶️ Resume</button>
+            <button class="btn btn--secondary btn--sm" id="btn-dismiss-trip">✕ Dismiss</button>
+          </div>
+        </div>
+
+        <!-- Android Hardware Back Confirmation Modal (Phase 18) -->
+        <div class="modal-overlay" id="map-exit-confirm-modal" style="display: none;">
+          <div class="modal-card">
+            <h3 class="modal-title">Exit Navigation Guidance?</h3>
+            <p class="modal-desc">Active turn-by-turn guidance is currently running. Do you want to stop navigation?</p>
+            <div class="modal-actions">
+              <button class="btn btn--danger" id="btn-confirm-exit-nav">Yes, Stop Navigation</button>
+              <button class="btn btn--secondary" id="btn-cancel-exit-nav">Stay on Route</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -441,6 +481,97 @@ export function renderMapScreen(container: HTMLElement): void {
 
   // Subscribe to live 50 Hz Fused EKF updates
   unsubscribeFusion = fusionService.subscribe(updateMapState);
+
+  // Check for unfinished trip restoration (Phase 18)
+  function checkTripRecovery(): void {
+    if (tripRecoveryService.hasActiveTrip() && !navigationService.isNavigating) {
+      const trip = tripRecoveryService.getStoredTrip();
+      if (!trip) return;
+
+      const banner = document.getElementById('map-trip-recovery-banner');
+      const subtitle = document.getElementById('trip-recovery-subtitle');
+      if (banner && subtitle) {
+        const remaining = formatDist(trip.remainingDistance);
+        subtitle.textContent = `Destination: ${trip.destinationName} • ${remaining} remaining`;
+        banner.style.display = 'flex';
+
+        document.getElementById('btn-resume-trip')?.addEventListener('click', () => {
+          banner.style.display = 'none';
+          navigationService.resumeTrip(trip);
+          isFollowing = true;
+          updateFollowBtn();
+          if (vehicleMarker) map?.panTo(vehicleMarker.getLatLng());
+        });
+
+        document.getElementById('btn-dismiss-trip')?.addEventListener('click', () => {
+          banner.style.display = 'none';
+          tripRecoveryService.clearTrip();
+        });
+      }
+    }
+  }
+  checkTripRecovery();
+
+  // Android Geo Intent Handling (Phase 18)
+  function handleGeoUri(rawUri: string): void {
+    if (!rawUri) return;
+    const payload = GeoUriParser.parse(rawUri);
+    if (payload.latitude !== null && payload.longitude !== null) {
+      const destCoord = { latitude: payload.latitude, longitude: payload.longitude };
+      const currentEstimate = fusionService.getLatestEstimate();
+      if (currentEstimate?.coordinate) {
+        routingService.calculateRoute({
+          origin: currentEstimate.coordinate,
+          destination: destCoord,
+        });
+        if (map) {
+          map.setView([payload.latitude, payload.longitude], payload.zoom || 15);
+        }
+      }
+    } else if (payload.query) {
+      const results = poiService.search(payload.query);
+      if (results.length > 0) {
+        const target = results[0];
+        const currentEstimate = fusionService.getLatestEstimate();
+        if (currentEstimate?.coordinate) {
+          routingService.calculateRoute({
+            origin: currentEstimate.coordinate,
+            destination: { latitude: target.poi.latitude, longitude: target.poi.longitude },
+          });
+          if (map) {
+            map.setView([target.poi.latitude, target.poi.longitude], 16);
+          }
+        }
+      }
+    }
+  }
+
+  const pendingIntent = androidBridgeService.getPendingGeoIntent();
+  if (pendingIntent) {
+    handleGeoUri(pendingIntent);
+  }
+
+  unsubscribeGeoIntent = androidBridgeService.onGeoIntent((uri) => {
+    handleGeoUri(uri);
+  });
+
+  // Android Hardware Back Navigation (Phase 18)
+  const modalExit = document.getElementById('map-exit-confirm-modal');
+  document.getElementById('btn-confirm-exit-nav')?.addEventListener('click', () => {
+    navigationService.stopNavigation();
+    if (modalExit) modalExit.style.display = 'none';
+  });
+  document.getElementById('btn-cancel-exit-nav')?.addEventListener('click', () => {
+    if (modalExit) modalExit.style.display = 'none';
+  });
+
+  unsubscribeBackPress = androidBridgeService.onBackPressed(() => {
+    if (navigationService.isNavigating) {
+      if (modalExit) modalExit.style.display = 'flex';
+    } else if (window.history.length > 1) {
+      window.history.back();
+    }
+  });
 }
 
 function updateNavigationUI(state: NavigationState): void {

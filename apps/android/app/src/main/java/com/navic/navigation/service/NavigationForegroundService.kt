@@ -123,9 +123,12 @@ class NavigationForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val bigText = if (stats.isNotEmpty()) "$maneuver\n$stats" else maneuver
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(maneuver)
             .setContentText(stats)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText).setSummaryText("NavIC Offline Navigation"))
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setOngoing(true)
             .setContentIntent(pendingIntent)

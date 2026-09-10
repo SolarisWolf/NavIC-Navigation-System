@@ -44,6 +44,11 @@ declare global {
       hasRawGnssMeasurements(): boolean;
       setWakeLock(enable: boolean): void;
       updateGuidanceNotification(maneuver: string, stats: string): void;
+      updateNavigationNotification(maneuver: string, distance: string, eta: string, road: string): void;
+      requestAudioFocus(): boolean;
+      abandonAudioFocus(): boolean;
+      setImmersiveMode(enable: boolean): void;
+      getPendingGeoIntent(): string;
       stopGuidanceService(): void;
       startHardwareSensors(): boolean;
       stopHardwareSensors(): void;
@@ -236,6 +241,58 @@ class AndroidBridgeServiceImpl {
     if (this.isNativeAndroid && window.NavICNative) {
       window.NavICNative.setSensorSamplingRate(rateHz);
     }
+  }
+
+  public updateNavigationNotification(maneuver: string, distance: string, eta: string, road: string): void {
+    if (this.isNativeAndroid && window.NavICNative) {
+      window.NavICNative.updateNavigationNotification(maneuver, distance, eta, road);
+    }
+  }
+
+  public requestAudioFocus(): boolean {
+    if (this.isNativeAndroid && window.NavICNative) {
+      return window.NavICNative.requestAudioFocus();
+    }
+    return true;
+  }
+
+  public abandonAudioFocus(): boolean {
+    if (this.isNativeAndroid && window.NavICNative) {
+      return window.NavICNative.abandonAudioFocus();
+    }
+    return true;
+  }
+
+  public setImmersiveMode(enabled: boolean): void {
+    if (this.isNativeAndroid && window.NavICNative) {
+      window.NavICNative.setImmersiveMode(enabled);
+    }
+  }
+
+  public getPendingGeoIntent(): string {
+    if (this.isNativeAndroid && window.NavICNative) {
+      return window.NavICNative.getPendingGeoIntent();
+    }
+    return '';
+  }
+
+  public onGeoIntent(callback: (uri: string) => void): () => void {
+    const handler = (evt: Event) => {
+      const customEvt = evt as CustomEvent<{ uri: string }>;
+      if (customEvt.detail?.uri) {
+        callback(customEvt.detail.uri);
+      }
+    };
+    window.addEventListener('android-geo-intent', handler);
+    return () => window.removeEventListener('android-geo-intent', handler);
+  }
+
+  public onBackPressed(callback: () => void): () => void {
+    const handler = () => {
+      callback();
+    };
+    window.addEventListener('android-back-pressed', handler);
+    return () => window.removeEventListener('android-back-pressed', handler);
   }
 
   public stopGuidance(): void {

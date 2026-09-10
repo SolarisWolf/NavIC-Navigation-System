@@ -11,6 +11,7 @@ import { voiceGuidanceService } from '../services/voice-guidance-service.js';
 import { gnssService, DataSourceMode } from '../services/gnss-service.js';
 import { androidBridgeService } from '../services/android-bridge-service.js';
 import { powerService } from '../services/power-service.js';
+import { tripRecoveryService } from '../services/trip-recovery-service.js';
 
 let unsubscribePowerSettings: (() => void) | null = null;
 
@@ -26,6 +27,7 @@ export function renderSettingsScreen(container: HTMLElement): void {
   const currentSourceMode = gnssService.getSourceMode();
   const androidInfo = androidBridgeService.getDeviceInfo();
   const powerStatus = powerService.getStatus();
+  const platformSettings = tripRecoveryService.getSettings();
 
   container.innerHTML = `
     <div class="settings-screen screen">
@@ -244,6 +246,67 @@ export function renderSettingsScreen(container: HTMLElement): void {
         </div>
       </div>
 
+      <!-- Android Platform Integration (Phase 18) -->
+      <div class="settings-group settings-group--interactive" id="android-platform-settings-group">
+        <div class="settings-group__header">
+          <span class="settings-group__header-icon">📱</span>
+          Android Platform Integration
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Sticky Immersive Driving Mode</span>
+            <span class="settings-interactive-row__desc">Automatically hides system status and navigation bars during active guidance</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-immersive-mode" ${platformSettings.immersiveDrivingMode ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Audio Focus Transient Ducking</span>
+            <span class="settings-interactive-row__desc">Lowers volume of background media (music/radio) during spoken turn announcements</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-audio-ducking" ${platformSettings.audioDucking ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Persistent Offline Trip Recovery</span>
+            <span class="settings-interactive-row__desc">Preserves active navigation route across app reloads, memory reclamation, or restarts</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-trip-recovery" ${platformSettings.tripRecovery ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Geo Intent Simulation / Testing -->
+        <div class="settings-interactive-row" style="flex-direction: column; align-items: stretch; gap: var(--space-2);">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Geo URI Deep Link Tester (RFC 5870)</span>
+            <span class="settings-interactive-row__desc">Simulate Android intent resolution from external apps (SMS, Calendar, Contacts)</span>
+          </div>
+          <div style="display: flex; gap: var(--space-2); margin-top: 4px;">
+            <input type="text" id="input-geo-intent-uri" class="settings-input" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-family: monospace; font-size: 13px;" value="geo:28.6129,77.2295?q=India+Gate">
+            <button class="btn btn--primary" id="btn-dispatch-geo-intent" style="white-space: nowrap;">
+              🚀 Open Intent
+            </button>
+          </div>
+          <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: 6px;">
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-1">📍 India Gate (geo:lat,lng)</button>
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-2">🔍 Connaught Place (geo:0,0?q=...)</button>
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-3">🧭 Red Fort (google.navigation:q=...)</button>
+          </div>
+          <span class="settings-test-status" id="geo-intent-status" style="margin-top: 4px;"></span>
+        </div>
+      </div>
+
       <!-- Navigation Parameters -->
       <div class="settings-group">
         <div class="settings-group__header">
@@ -313,6 +376,66 @@ export function renderSettingsScreen(container: HTMLElement): void {
         ${settingsRow('Default Center', `${config.map.defaultCenter.latitude}°N, ${config.map.defaultCenter.longitude}°E`)}
         ${settingsRow('Default Zoom', `${config.map.defaultZoom}`)}
         ${settingsRow('Zoom Range', `${config.map.minZoom} – ${config.map.maxZoom}`)}
+      </div>
+
+      <!-- Android Platform Integration (Phase 18) -->
+      <div class="settings-group settings-group--interactive" id="android-platform-group">
+        <div class="settings-group__header">
+          <span class="settings-group__header-icon">📱</span>
+          Android Platform Features
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Immersive Driving Mode</span>
+            <span class="settings-interactive-row__desc">Full-screen edge-to-edge cockpit view during active navigation (hides status & nav bars)</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-immersive-mode" ${platformSettings.immersiveDrivingMode ? 'checked' : ''} />
+            <span class="toggle-switch__slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Audio Focus Ducking</span>
+            <span class="settings-interactive-row__desc">Automatically lower background media volume during spoken turn instructions</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-audio-ducking" ${platformSettings.audioDucking ? 'checked' : ''} />
+            <span class="toggle-switch__slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Persistent Trip Recovery</span>
+            <span class="settings-interactive-row__desc">Auto-save navigation state for seamless resume after app restart or memory pressure</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-trip-recovery" ${platformSettings.tripRecovery ? 'checked' : ''} />
+            <span class="toggle-switch__slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-group__divider"></div>
+        <div class="settings-group__header" style="font-size:0.85rem; padding-top:0;">
+          <span class="settings-group__header-icon">🔗</span>
+          Geo URI Intent Simulator
+        </div>
+
+        <div class="settings-interactive-row" style="flex-wrap:wrap; gap: 0.5rem;">
+          <input type="text" id="input-geo-intent-uri" class="settings-input" placeholder="geo:28.6129,77.2295?q=India+Gate" style="flex: 1; min-width: 200px; background: var(--bg-surface, #1e293b); color: var(--text-primary, #f8fafc); border: 1px solid var(--border-color, #334155); border-radius: 8px; padding: 0.5rem 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;" />
+          <button id="btn-dispatch-geo-intent" class="settings-btn settings-btn--primary" style="white-space:nowrap;">🚀 Launch Intent</button>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; padding: 0 var(--settings-pad, 1rem);">
+          <button id="btn-preset-geo-1" class="settings-btn settings-btn--outline" style="font-size:0.75rem;">📍 India Gate</button>
+          <button id="btn-preset-geo-2" class="settings-btn settings-btn--outline" style="font-size:0.75rem;">🔎 Connaught Place</button>
+          <button id="btn-preset-geo-3" class="settings-btn settings-btn--outline" style="font-size:0.75rem;">🧭 Red Fort</button>
+        </div>
+
+        <div id="geo-intent-status" class="settings-interactive-row__desc" style="min-height: 1.2em; padding: 0.25rem var(--settings-pad, 1rem); color: var(--color-navic, #ff9933);"></div>
       </div>
     </div>
   `;
@@ -507,6 +630,59 @@ export function renderSettingsScreen(container: HTMLElement): void {
     if (powerSaverToggle && powerSaverToggle.checked !== status.isPowerSaverActive) {
       powerSaverToggle.checked = status.isPowerSaverActive;
     }
+  });
+
+  // Android Platform Integration event listeners (Phase 18)
+  const immersiveToggle = document.getElementById('setting-immersive-mode') as HTMLInputElement | null;
+  const duckingToggle = document.getElementById('setting-audio-ducking') as HTMLInputElement | null;
+  const recoveryToggle = document.getElementById('setting-trip-recovery') as HTMLInputElement | null;
+  const inputGeoUri = document.getElementById('input-geo-intent-uri') as HTMLInputElement | null;
+  const btnDispatchGeo = document.getElementById('btn-dispatch-geo-intent');
+  const btnPreset1 = document.getElementById('btn-preset-geo-1');
+  const btnPreset2 = document.getElementById('btn-preset-geo-2');
+  const btnPreset3 = document.getElementById('btn-preset-geo-3');
+  const geoStatus = document.getElementById('geo-intent-status');
+
+  immersiveToggle?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    tripRecoveryService.updateSettings({ immersiveDrivingMode: checked });
+    androidBridgeService.setImmersiveMode(checked);
+  });
+
+  duckingToggle?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    tripRecoveryService.updateSettings({ audioDucking: checked });
+  });
+
+  recoveryToggle?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    tripRecoveryService.updateSettings({ tripRecovery: checked });
+  });
+
+  btnPreset1?.addEventListener('click', () => {
+    if (inputGeoUri) inputGeoUri.value = 'geo:28.6129,77.2295?q=India+Gate';
+  });
+
+  btnPreset2?.addEventListener('click', () => {
+    if (inputGeoUri) inputGeoUri.value = 'geo:0,0?q=Connaught+Place';
+  });
+
+  btnPreset3?.addEventListener('click', () => {
+    if (inputGeoUri) inputGeoUri.value = 'google.navigation:q=28.6562,77.2410';
+  });
+
+  btnDispatchGeo?.addEventListener('click', () => {
+    if (!inputGeoUri) return;
+    const uri = inputGeoUri.value.trim();
+    if (!uri) return;
+
+    window.dispatchEvent(new CustomEvent('android-geo-intent', { detail: { uri } }));
+    if (geoStatus) {
+      geoStatus.textContent = `Dispatched intent: ${uri}`;
+      setTimeout(() => { if (geoStatus) geoStatus.textContent = ''; }, 4000);
+    }
+    // Navigate to map to see route / destination resolution
+    window.location.hash = '#/map';
   });
 }
 

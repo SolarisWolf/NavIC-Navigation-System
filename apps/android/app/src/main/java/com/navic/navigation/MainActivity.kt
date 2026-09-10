@@ -1,6 +1,7 @@
 package com.navic.navigation
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +16,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.WebViewAssetLoader
 import com.navic.navigation.bridge.NavICNativeBridge
 import com.navic.navigation.databinding.ActivityMainBinding
@@ -22,13 +25,16 @@ import com.navic.navigation.service.NavigationForegroundService
 
 /**
  * Main Activity hosting the offline NavIC navigation interface inside a
- * hardware-accelerated local WebView container with native sensor bridge.
+ * hardware-accelerated local WebView container with native sensor bridge,
+ * geo intent deep linking, sticky immersive driving mode, and audio focus.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var bridge: NavICNativeBridge
     private var isWakeLockActive = false
+    private var isPageLoaded = false
+    private var pendingGeoIntentUri: String? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -50,6 +56,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Parse any incoming Geo URI launch intent
+        handleIntent(intent)
+
         // Request Location Permissions
         requestRequiredPermissions()
 
@@ -61,6 +70,30 @@ class MainActivity : AppCompatActivity() {
 
         // Setup Back Press Navigation
         setupBackNavigation()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_VIEW && intent.data != null) {
+            val uriString = intent.data.toString()
+            pendingGeoIntentUri = uriString
+            if (isPageLoaded) {
+                dispatchGeoIntent(uriString)
+            }
+        }
+    }
+
+    private fun dispatchGeoIntent(uriString: String) {
+        val escaped = uriString.replace("'", "\\'")
+        val script = "window.dispatchEvent(new CustomEvent('android-geo-intent', { detail: { uri: '$escaped' } }));"
+        runOnUiThread {
+            binding.webView.evaluateJavascript(script, null)
+        }
     }
 
     private fun requestRequiredPermissions() {
@@ -96,11 +129,17 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             },
+            onImmersiveModeRequested = { enable ->
+                setImmersiveDrivingMode(enable)
+            },
             onNotificationUpdate = { maneuver, stats ->
                 NavigationForegroundService.updateService(this, maneuver, stats)
             },
             onStopGuidanceRequested = {
                 NavigationForegroundService.stopService(this)
+            },
+            onGetPendingGeoIntent = {
+                pendingGeoIntentUri
             },
             onDispatchJs = { jsScript ->
                 runOnUiThread {
@@ -108,6 +147,22 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    /**
+     * Toggles edge-to-edge sticky immersive mode for distraction-free navigation.
+     */
+    fun setImmersiveDrivingMode(enable: Boolean) {
+        runOnUiThread {
+            val controller = WindowInsetsControllerCompat(window, window.decorView)
+            if (enable) {
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
     }
 
     private fun setupWebView() {
@@ -142,6 +197,10 @@ class MainActivity : AppCompatActivity() {
                 override fun onPageFinished(view: WebView, url: String) {
                     super.onPageFinished(view, url)
                     binding.loadingIndicator.visibility = View.GONE
+                    isPageLoaded = true
+                    pendingGeoIntentUri?.let { uri ->
+                        dispatchGeoIntent(uri)
+                    }
                 }
             }
 
@@ -153,11 +212,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (binding.webView.canGoBack()) {
-                    binding.webView.goBack()
-                } else {
-                    finish()
-                }
+                // Dispatch back-press event to Web client for confirmation or screen pop
+                binding.webView.evaluateJavascript(
+                    "window.dispatchEvent(new CustomEvent('android-back-pressed'));",
+                    null
+                )
             }
         })
     }

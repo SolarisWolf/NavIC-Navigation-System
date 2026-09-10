@@ -5,6 +5,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.util.Log
 import android.webkit.JavascriptInterface
+import com.navic.navigation.audio.AndroidAudioManager
 import com.navic.navigation.sensors.AndroidLocationProvider
 import com.navic.navigation.sensors.AndroidSensorProvider
 import com.navic.navigation.sensors.AndroidBatteryMonitor
@@ -14,13 +15,16 @@ import org.json.JSONObject
  * Bi-directional native Android to Web JavaScript bridge.
  * Exposes device hardware environment, NavIC constellation detection,
  * real GPS/NavIC hardware location updates, 50 Hz IMU sensors,
- * wake-lock management, and foreground navigation notifications.
+ * wake-lock management, audio focus ducking, immersive driving mode,
+ * geo intent deep links, and foreground navigation notifications.
  */
 class NavICNativeBridge(
     private val context: Context,
     private val onWakeLockRequested: (Boolean) -> Unit,
+    private val onImmersiveModeRequested: (Boolean) -> Unit,
     private val onNotificationUpdate: (String, String) -> Unit,
     private val onStopGuidanceRequested: () -> Unit,
+    private val onGetPendingGeoIntent: () -> String?,
     private val onDispatchJs: (String) -> Unit
 ) {
     companion object {
@@ -62,6 +66,8 @@ class NavICNativeBridge(
             dispatchToWeb("navic-hardware-battery", jsonStr)
         }
     )
+
+    private val audioManager = AndroidAudioManager(context)
 
     init {
         // Start battery monitoring immediately so web client has telemetry on launch
@@ -196,6 +202,50 @@ class NavICNativeBridge(
     @JavascriptInterface
     fun updateGuidanceNotification(maneuverText: String, etaStats: String) {
         onNotificationUpdate(maneuverText, etaStats)
+    }
+
+    /**
+     * Rich navigation notification update with turn maneuver, distance, ETA, and road name.
+     */
+    @JavascriptInterface
+    fun updateNavigationNotification(maneuver: String, distance: String, eta: String, road: String) {
+        val stats = if (road.isNotEmpty()) "$road • $distance • ETA: $eta" else "$distance • ETA: $eta"
+        onNotificationUpdate(maneuver, stats)
+    }
+
+    /**
+     * Request transient audio ducking focus before speaking guidance instructions.
+     */
+    @JavascriptInterface
+    fun requestAudioFocus(): Boolean {
+        return audioManager.requestNavigationAudioFocus()
+    }
+
+    /**
+     * Abandon audio focus after guidance instruction or chime finishes.
+     */
+    @JavascriptInterface
+    fun abandonAudioFocus(): Boolean {
+        return audioManager.abandonNavigationAudioFocus()
+    }
+
+    /**
+     * Toggles sticky immersive edge-to-edge full-screen driving mode.
+     */
+    @JavascriptInterface
+    fun setImmersiveMode(enable: Boolean) {
+        Log.i(TAG, "Immersive mode requested: $enable")
+        onImmersiveModeRequested(enable)
+    }
+
+    /**
+     * Returns any pending Geo intent URI (from cold start launch or external app tap).
+     */
+    @JavascriptInterface
+    fun getPendingGeoIntent(): String {
+        val intentUri = onGetPendingGeoIntent() ?: ""
+        Log.d(TAG, "getPendingGeoIntent: $intentUri")
+        return intentUri
     }
 
     /**

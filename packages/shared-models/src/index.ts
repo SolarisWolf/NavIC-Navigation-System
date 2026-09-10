@@ -132,3 +132,11 @@ export {
   type PowerStatusListener,
 } from './power.types';
 
+// ─── Trip Recovery & Android Platform Types ─────────────────────────────────
+export {
+  type ActiveTripState,
+  type GeoIntentPayload,
+  type AndroidPlatformSettings,
+  DEFAULT_ANDROID_PLATFORM_SETTINGS,
+} from './trip-recovery.types';
+
