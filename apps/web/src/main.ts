@@ -8,6 +8,7 @@ import { Logger, LogLevel, DEFAULT_CONFIG } from '@navic/shared-models';
 import { Router } from './router.js';
 import { StatusBar } from './components/status-bar.js';
 import { Sidebar } from './components/sidebar.js';
+import { SimulationControls } from './components/simulation-controls.js';
 import { renderDashboard } from './screens/dashboard.js';
 import { renderMapScreen } from './screens/map-screen.js';
 import { renderSatelliteScreen } from './screens/satellite-screen.js';
@@ -86,6 +87,10 @@ function initApp(): void {
   // Initialize components
   new StatusBar(statusBarEl);
   new Sidebar(sidebarEl, router);
+  
+  if (DEFAULT_CONFIG.simulation.enabled) {
+    new SimulationControls(document.body);
+  }
 
   // Start router
   router.start('/dashboard');

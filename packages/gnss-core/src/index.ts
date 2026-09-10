@@ -2,21 +2,9 @@
  * @navic/gnss-core
  *
  * GNSS position engine and provider management.
- *
- * This package will contain:
- * - GNSS Simulator (Phase 2)
- * - Position Engine (Phase 3)
- * - Satellite summary utilities
- *
- * Architecture:
- *   GNSSProvider (interface from shared-models)
- *     ├── GNSSSimulator (Phase 2) — simulated constellation data
- *     └── AndroidGNSS (Phase 15) — real hardware GNSS
- *           ↓
- *     PositionEngine (Phase 3) — position estimation, smoothing, fix quality
  */
 
-// Re-export GNSS-related types for convenience
+// Re-export GNSS-related types
 export type {
   GNSSProvider,
   GNSSMeasurement,
@@ -29,3 +17,24 @@ export {
   Constellation,
   FixType,
 } from '@navic/shared-models';
+
+// Export simulator
+export {
+  GNSSSimulator,
+  type GNSSSimulatorConfig,
+  computeVisibleSatellites,
+  SCENARIOS,
+  getScenario,
+  getScenarioNames,
+  RouteInterpolator,
+  ALL_SATELLITES,
+  NAVIC_SATELLITES,
+  GPS_SATELLITES,
+  GALILEO_SATELLITES,
+  BEIDOU_SATELLITES,
+  GLONASS_SATELLITES,
+  getSatellitesForConstellation,
+  gaussianRandom,
+  addPositionNoise,
+  estimateAccuracy,
+} from './simulator/index.js';

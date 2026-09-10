@@ -3,12 +3,21 @@
  *
  * Main overview screen showing GNSS status, satellite summary,
  * navigation state, and sensor fusion status.
- * All values show empty/awaiting states until data sources are connected.
+ * Subscribes to GNSS service for live data updates.
  */
 
-import { createMetricRow } from '../utils/dom.js';
+import { type GNSSMeasurement, FixType, Constellation } from '@navic/shared-models';
+import { gnssService, GNSSServiceImpl as _GNSSServiceImplRef } from '../services/gnss-service.js';
+
+let unsubscribe: (() => void) | null = null;
 
 export function renderDashboard(container: HTMLElement): void {
+  // Clean up previous subscription
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
+  }
+
   container.innerHTML = `
     <div class="dashboard screen">
       <div class="screen__header">
@@ -16,7 +25,7 @@ export function renderDashboard(container: HTMLElement): void {
           <h1 class="screen__title">Dashboard</h1>
           <p class="screen__subtitle">System overview and real-time status</p>
         </div>
-        <span class="status-badge status-badge--idle">Idle</span>
+        <span class="status-badge status-badge--idle" id="dash-status-badge">Idle</span>
       </div>
 
       <div class="dashboard__grid">
@@ -27,9 +36,17 @@ export function renderDashboard(container: HTMLElement): void {
               <span class="card__title-icon">📡</span>
               GNSS Status
             </div>
-            <span class="card__badge">No Fix</span>
+            <span class="card__badge" id="gnss-fix-badge">No Fix</span>
           </div>
-          <div class="card__body" id="gnss-metrics"></div>
+          <div class="card__body">
+            <div class="metric-row"><span class="metric-row__label">Fix Type</span><span class="metric-row__value metric-row__value--empty" id="d-fix">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Accuracy</span><span class="metric-row__value metric-row__value--empty" id="d-accuracy">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Latitude</span><span class="metric-row__value metric-row__value--empty" id="d-lat">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Longitude</span><span class="metric-row__value metric-row__value--empty" id="d-lon">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Altitude</span><span class="metric-row__value metric-row__value--empty" id="d-alt">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Speed</span><span class="metric-row__value metric-row__value--empty" id="d-speed">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Heading</span><span class="metric-row__value metric-row__value--empty" id="d-heading">--</span></div>
+          </div>
         </div>
 
         <!-- Satellites Card -->
@@ -39,9 +56,17 @@ export function renderDashboard(container: HTMLElement): void {
               <span class="card__title-icon">🛰</span>
               Satellites
             </div>
-            <span class="card__badge">0 tracked</span>
+            <span class="card__badge" id="sat-total-badge">0 tracked</span>
           </div>
-          <div class="card__body" id="satellite-metrics"></div>
+          <div class="card__body">
+            <div class="constellation-row"><span class="constellation-row__name" style="font-weight:600;color:var(--text-primary)">Total</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-total">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__dot" style="background:var(--color-navic)"></span><span class="constellation-row__name">NavIC / IRNSS</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-navic">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__dot" style="background:var(--color-gps)"></span><span class="constellation-row__name">GPS</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-gps">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__dot" style="background:var(--color-galileo)"></span><span class="constellation-row__name">Galileo</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-galileo">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__dot" style="background:var(--color-beidou)"></span><span class="constellation-row__name">BeiDou</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-beidou">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__dot" style="background:var(--color-glonass)"></span><span class="constellation-row__name">GLONASS</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-glonass">--</span></div>
+            <div class="constellation-row"><span class="constellation-row__name" style="font-weight:600;color:var(--text-primary)">Used in Fix</span><span class="constellation-row__count constellation-row__count--empty" id="d-sat-used">--</span></div>
+          </div>
         </div>
 
         <!-- Navigation Card -->
@@ -53,7 +78,12 @@ export function renderDashboard(container: HTMLElement): void {
             </div>
             <span class="card__badge">No Route</span>
           </div>
-          <div class="card__body" id="nav-metrics"></div>
+          <div class="card__body">
+            <div class="metric-row"><span class="metric-row__label">Destination</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Distance</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">ETA</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Instruction</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+          </div>
         </div>
 
         <!-- Sensor Fusion Card -->
@@ -65,83 +95,89 @@ export function renderDashboard(container: HTMLElement): void {
             </div>
             <span class="card__badge">Inactive</span>
           </div>
-          <div class="card__body" id="fusion-metrics"></div>
+          <div class="card__body">
+            <div class="metric-row"><span class="metric-row__label">EKF Status</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Mode</span><span class="metric-row__value">Idle</span></div>
+            <div class="metric-row"><span class="metric-row__label">GNSS Source</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">IMU Source</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Dead Reckoning</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">Latency</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+          </div>
         </div>
       </div>
     </div>
   `;
 
-  // Populate GNSS metrics
-  const gnssMetrics = document.getElementById('gnss-metrics');
-  if (gnssMetrics) {
-    gnssMetrics.appendChild(createMetricRow('Fix Type', '--'));
-    gnssMetrics.appendChild(createMetricRow('Accuracy', '--'));
-    gnssMetrics.appendChild(createMetricRow('Latitude', '--'));
-    gnssMetrics.appendChild(createMetricRow('Longitude', '--'));
-    gnssMetrics.appendChild(createMetricRow('Altitude', '--'));
-    gnssMetrics.appendChild(createMetricRow('Speed', '--'));
-    gnssMetrics.appendChild(createMetricRow('Heading', '--'));
-  }
+  // Subscribe to GNSS updates
+  unsubscribe = gnssService.subscribe(updateDashboard);
+}
 
-  // Populate Satellite constellation rows
-  const satMetrics = document.getElementById('satellite-metrics');
-  if (satMetrics) {
-    const constellations = [
-      { name: 'Total', color: '' },
-      { name: 'NavIC / IRNSS', color: 'navic' },
-      { name: 'GPS', color: 'gps' },
-      { name: 'Galileo', color: 'galileo' },
-      { name: 'BeiDou', color: 'beidou' },
-      { name: 'GLONASS', color: 'glonass' },
-      { name: 'Used in Fix', color: '' },
-    ];
+function updateDashboard(m: GNSSMeasurement): void {
+  const isNoFix = m.fixType === FixType.NoFix;
 
-    for (const c of constellations) {
-      const row = document.createElement('div');
-      row.className = 'constellation-row';
-
-      if (c.color) {
-        const dot = document.createElement('span');
-        dot.className = `constellation-row__dot`;
-        dot.style.background = `var(--color-${c.color})`;
-        row.appendChild(dot);
-      }
-
-      const name = document.createElement('span');
-      name.className = 'constellation-row__name';
-      name.textContent = c.name;
-      if (!c.color) {
-        name.style.fontWeight = '600';
-        name.style.color = 'var(--text-primary)';
-      }
-      row.appendChild(name);
-
-      const count = document.createElement('span');
-      count.className = 'constellation-row__count constellation-row__count--empty';
-      count.textContent = '--';
-      row.appendChild(count);
-
-      satMetrics.appendChild(row);
+  // Status badge
+  const badge = document.getElementById('dash-status-badge');
+  if (badge) {
+    if (isNoFix) {
+      badge.textContent = 'No Fix';
+      badge.className = 'status-badge status-badge--error';
+    } else {
+      badge.textContent = m.fixType === FixType.Fix3D ? '3D Fix' : '2D Fix';
+      badge.className = 'status-badge status-badge--active';
     }
   }
 
-  // Populate Navigation metrics
-  const navMetrics = document.getElementById('nav-metrics');
-  if (navMetrics) {
-    navMetrics.appendChild(createMetricRow('Destination', '--'));
-    navMetrics.appendChild(createMetricRow('Distance', '--'));
-    navMetrics.appendChild(createMetricRow('ETA', '--'));
-    navMetrics.appendChild(createMetricRow('Instruction', '--'));
+  // GNSS fix badge
+  const fixBadge = document.getElementById('gnss-fix-badge');
+  if (fixBadge) {
+    fixBadge.textContent = isNoFix ? 'No Fix' : m.fixType === FixType.Fix3D ? '3D Fix' : '2D Fix';
   }
 
-  // Populate Sensor Fusion metrics
-  const fusionMetrics = document.getElementById('fusion-metrics');
-  if (fusionMetrics) {
-    fusionMetrics.appendChild(createMetricRow('EKF Status', '--'));
-    fusionMetrics.appendChild(createMetricRow('Mode', 'Idle'));
-    fusionMetrics.appendChild(createMetricRow('GNSS Source', '--'));
-    fusionMetrics.appendChild(createMetricRow('IMU Source', '--'));
-    fusionMetrics.appendChild(createMetricRow('Dead Reckoning', '--'));
-    fusionMetrics.appendChild(createMetricRow('Latency', '--'));
+  // GNSS values
+  setMetric('d-fix', isNoFix ? 'No Fix' : m.fixType === FixType.Fix3D ? '3D Fix' : '2D Fix', !isNoFix);
+  setMetric('d-accuracy', isNoFix ? '--' : `${m.horizontalAccuracy} m`, !isNoFix);
+  setMetric('d-lat', isNoFix ? '--' : `${m.latitude.toFixed(7)}°`, !isNoFix);
+  setMetric('d-lon', isNoFix ? '--' : `${m.longitude.toFixed(7)}°`, !isNoFix);
+  setMetric('d-alt', isNoFix ? '--' : `${m.altitude.toFixed(1)} m`, !isNoFix);
+  setMetric('d-speed', isNoFix ? '--' : `${m.speed.toFixed(2)} m/s`, !isNoFix);
+  setMetric('d-heading', isNoFix ? '--' : `${m.bearing.toFixed(1)}°`, !isNoFix);
+
+  // Satellite counts
+  const counts = computeCounts(m);
+  setMetric('d-sat-total', `${counts.total}`, counts.total > 0);
+  setMetric('d-sat-navic', `${counts.navic}`, counts.navic > 0);
+  setMetric('d-sat-gps', `${counts.gps}`, counts.gps > 0);
+  setMetric('d-sat-galileo', `${counts.galileo}`, counts.galileo > 0);
+  setMetric('d-sat-beidou', `${counts.beidou}`, counts.beidou > 0);
+  setMetric('d-sat-glonass', `${counts.glonass}`, counts.glonass > 0);
+  setMetric('d-sat-used', `${counts.used}`, counts.used > 0);
+
+  const totalBadge = document.getElementById('sat-total-badge');
+  if (totalBadge) totalBadge.textContent = `${counts.total} tracked`;
+}
+
+function setMetric(id: string, value: string, hasData: boolean): void {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+    el.className = `metric-row__value ${hasData ? '' : 'metric-row__value--empty'}`.trim();
+    if (hasData && !el.className.includes('count')) {
+      el.className = el.className.replace('constellation-row__count--empty', '');
+    }
   }
+}
+
+function computeCounts(m: GNSSMeasurement) {
+  let navic = 0, gps = 0, galileo = 0, beidou = 0, glonass = 0, used = 0;
+  for (const s of m.satellites) {
+    if (s.usedInFix) used++;
+    switch (s.constellation) {
+      case Constellation.NavIC: navic++; break;
+      case Constellation.GPS: gps++; break;
+      case Constellation.Galileo: galileo++; break;
+      case Constellation.BeiDou: beidou++; break;
+      case Constellation.GLONASS: glonass++; break;
+    }
+  }
+  return { total: m.satellites.length, navic, gps, galileo, beidou, glonass, used };
 }
