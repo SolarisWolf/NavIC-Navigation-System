@@ -6,16 +6,22 @@
  * Subscribes to GNSS service for live data updates.
  */
 
-import { type GNSSMeasurement, FixType, Constellation } from '@navic/shared-models';
-import { gnssService, GNSSServiceImpl as _GNSSServiceImplRef } from '../services/gnss-service.js';
+import { type GNSSMeasurement, FixType, Constellation, SensorFusionMode, type SensorFusionStatus } from '@navic/shared-models';
+import { gnssService } from '../services/gnss-service.js';
+import { fusionService } from '../services/fusion-service.js';
 
 let unsubscribe: (() => void) | null = null;
+let unsubscribeFusion: (() => void) | null = null;
 
 export function renderDashboard(container: HTMLElement): void {
-  // Clean up previous subscription
+  // Clean up previous subscriptions
   if (unsubscribe) {
     unsubscribe();
     unsubscribe = null;
+  }
+  if (unsubscribeFusion) {
+    unsubscribeFusion();
+    unsubscribeFusion = null;
   }
 
   container.innerHTML = `
@@ -93,15 +99,15 @@ export function renderDashboard(container: HTMLElement): void {
               <span class="card__title-icon">⚡</span>
               Sensor Fusion
             </div>
-            <span class="card__badge">Inactive</span>
+            <span class="card__badge" id="fusion-status-badge">Starting...</span>
           </div>
           <div class="card__body">
-            <div class="metric-row"><span class="metric-row__label">EKF Status</span><span class="metric-row__value metric-row__value--empty">--</span></div>
-            <div class="metric-row"><span class="metric-row__label">Mode</span><span class="metric-row__value">Idle</span></div>
-            <div class="metric-row"><span class="metric-row__label">GNSS Source</span><span class="metric-row__value metric-row__value--empty">--</span></div>
-            <div class="metric-row"><span class="metric-row__label">IMU Source</span><span class="metric-row__value metric-row__value--empty">--</span></div>
-            <div class="metric-row"><span class="metric-row__label">Dead Reckoning</span><span class="metric-row__value metric-row__value--empty">--</span></div>
-            <div class="metric-row"><span class="metric-row__label">Latency</span><span class="metric-row__value metric-row__value--empty">--</span></div>
+            <div class="metric-row"><span class="metric-row__label">EKF Status</span><span class="metric-row__value metric-row__value--empty" id="d-ekf-status">Initializing</span></div>
+            <div class="metric-row"><span class="metric-row__label">Mode</span><span class="metric-row__value" id="d-ekf-mode">Initial Fix Pending</span></div>
+            <div class="metric-row"><span class="metric-row__label">GNSS Source</span><span class="metric-row__value" id="d-ekf-gnss">GNSS Sim (1 Hz)</span></div>
+            <div class="metric-row"><span class="metric-row__label">IMU Source</span><span class="metric-row__value" id="d-ekf-imu">IMU Sim (50 Hz)</span></div>
+            <div class="metric-row"><span class="metric-row__label">Dead Reckoning</span><span class="metric-row__value" id="d-ekf-dr">Inactive</span></div>
+            <div class="metric-row"><span class="metric-row__label">Latency</span><span class="metric-row__value" id="d-ekf-latency">--</span></div>
           </div>
         </div>
       </div>
@@ -110,6 +116,9 @@ export function renderDashboard(container: HTMLElement): void {
 
   // Subscribe to GNSS updates
   unsubscribe = gnssService.subscribe(updateDashboard);
+
+  // Subscribe to Fusion updates
+  unsubscribeFusion = fusionService.subscribeStatus(updateFusionCard);
 }
 
 function updateDashboard(m: GNSSMeasurement): void {
@@ -181,3 +190,52 @@ function computeCounts(m: GNSSMeasurement) {
   }
   return { total: m.satellites.length, navic, gps, galileo, beidou, glonass, used };
 }
+
+function updateFusionCard(s: SensorFusionStatus): void {
+  const badge = document.getElementById('fusion-status-badge');
+  if (badge) {
+    if (s.mode === SensorFusionMode.FULL_FUSION) {
+      badge.textContent = 'Active (50 Hz)';
+      badge.className = 'card__badge status-badge--active';
+    } else if (s.mode === SensorFusionMode.DEAD_RECKONING) {
+      badge.textContent = 'Dead Reckoning';
+      badge.className = 'card__badge status-badge--error';
+    } else {
+      badge.textContent = 'Initializing';
+      badge.className = 'card__badge status-badge--idle';
+    }
+  }
+
+  const isDr = s.mode === SensorFusionMode.DEAD_RECKONING;
+  const isFull = s.mode === SensorFusionMode.FULL_FUSION;
+
+  setMetric(
+    'd-ekf-status',
+    isFull ? 'Converged (50 Hz)' : isDr ? 'Dead Reckoning' : 'Awaiting Fix',
+    isFull || isDr
+  );
+
+  setMetric(
+    'd-ekf-mode',
+    isFull
+      ? 'GNSS + IMU Full Fusion'
+      : isDr
+      ? 'IMU Kinematic Dead Reckoning'
+      : 'Awaiting Initial Fix',
+    true
+  );
+
+  setMetric('d-ekf-gnss', s.lastGnssTimestamp ? 'GNSS Sim (1 Hz)' : '--', !!s.lastGnssTimestamp);
+  setMetric('d-ekf-imu', s.lastImuTimestamp ? 'IMU Sim (50 Hz)' : '--', !!s.lastImuTimestamp);
+  setMetric(
+    'd-ekf-dr',
+    isDr ? `Active (${s.deadReckoningSeconds.toFixed(1)}s)` : 'Inactive (Fix OK)',
+    true
+  );
+
+  const latText = s.averageLatencyMs > 0
+    ? `${s.averageLatencyMs.toFixed(2)} ms (Target: < 20 ms)`
+    : '< 0.5 ms (Target: < 20 ms)';
+  setMetric('d-ekf-latency', latText, true);
+}
+

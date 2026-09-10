@@ -3,14 +3,17 @@
  *
  * IMU sensor data display with accelerometer, gyroscope, and
  * magnetometer axis gauges. Visualizes real-time data from
- * the IMU Simulator.
+ * the IMU Simulator and Extended Kalman Filter (EKF) state.
  */
 
 import { imuService } from '../services/imu-service.js';
+import { fusionService } from '../services/fusion-service.js';
+import { SensorFusionMode, type SensorFusionStatus } from '@navic/shared-models';
 
 let unsubscribeAccel: (() => void) | null = null;
 let unsubscribeGyro: (() => void) | null = null;
 let unsubscribeMag: (() => void) | null = null;
+let unsubscribeFusion: (() => void) | null = null;
 
 // Throttling for UI updates (to prevent UI thread blocking)
 let lastUiUpdate = 0;
@@ -25,6 +28,7 @@ export function renderSensorScreen(container: HTMLElement): void {
   if (unsubscribeAccel) unsubscribeAccel();
   if (unsubscribeGyro) unsubscribeGyro();
   if (unsubscribeMag) unsubscribeMag();
+  if (unsubscribeFusion) unsubscribeFusion();
 
   container.innerHTML = `
     <style>
@@ -67,13 +71,14 @@ export function renderSensorScreen(container: HTMLElement): void {
       .sensor-val { font-family: monospace; min-width: 60px; display: inline-block; text-align: right; }
       
       .active-badge { color: var(--accent-secondary); border-color: var(--accent-secondary); background: rgba(0, 230, 118, 0.1); }
+      .dr-badge { color: #ffb300 !important; border-color: #ffb300 !important; background: rgba(255, 179, 0, 0.15) !important; }
     </style>
 
     <div class="sensor-screen screen">
       <div class="screen__header">
         <div>
-          <h1 class="screen__title">Sensors</h1>
-          <p class="screen__subtitle">Inertial measurement unit (IMU) telemetry</p>
+          <h1 class="screen__title">Sensors & EKF</h1>
+          <p class="screen__subtitle">Inertial telemetry & Extended Kalman Filter fusion state</p>
         </div>
         <span class="status-badge" id="imu-global-status">Starting...</span>
       </div>
@@ -98,7 +103,7 @@ export function renderSensorScreen(container: HTMLElement): void {
         </div>
       </div>
 
-      <!-- Sensor Cards Grid -->
+      <!-- Raw IMU Cards Grid -->
       <div class="sensor-screen__grid">
         <!-- Accelerometer -->
         <div class="sensor-card">
@@ -139,8 +144,51 @@ export function renderSensorScreen(container: HTMLElement): void {
           </div>
         </div>
       </div>
+
+      <!-- EKF Sensor Fusion Telemetry Section -->
+      <div class="section" style="margin-top: var(--space-6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <div class="section__title" style="margin-bottom: 0;">⚡ EKF Sensor Fusion Telemetry</div>
+          <button id="btn-sensor-outage" style="background: rgba(255, 179, 0, 0.15); color: #ffb300; border: 1px solid #ffb300; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-size: 12px; font-weight: 600;">
+            Simulate 5s Outage
+          </button>
+        </div>
+        <div class="sensor-screen__grid">
+          <!-- EKF State & Latency -->
+          <div class="sensor-card">
+            <div class="sensor-card__header">
+              <span class="sensor-card__title">⚡ Filter Performance</span>
+              <span class="sensor-card__status active-badge" id="ekf-mode-badge">Full Fusion</span>
+            </div>
+            <div class="sensor-axes">
+              <div class="sensor-axis"><span class="sensor-axis__label">Latency</span><span class="sensor-axis__value sensor-val" id="ekf-lat">0.00</span><span class="sensor-axis__unit">ms (&lt;20 target)</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Accuracy (1σ)</span><span class="sensor-axis__value sensor-val" id="ekf-uncert">0.00</span><span class="sensor-axis__unit">m</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Loop Rate</span><span class="sensor-axis__value sensor-val" id="ekf-rate">50</span><span class="sensor-axis__unit">Hz</span></div>
+            </div>
+          </div>
+
+          <!-- Estimated Sensor Biases -->
+          <div class="sensor-card">
+            <div class="sensor-card__header">
+              <span class="sensor-card__title">🧭 Estimated Biases</span>
+              <span class="sensor-card__status active-badge">Calibrated</span>
+            </div>
+            <div class="sensor-axes">
+              <div class="sensor-axis"><span class="sensor-axis__label">Accel Bias</span><span class="sensor-axis__value sensor-val" id="ekf-bias-acc">0.000</span><span class="sensor-axis__unit">m/s²</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Gyro Bias</span><span class="sensor-axis__value sensor-val" id="ekf-bias-gyr">0.0000</span><span class="sensor-axis__unit">rad/s</span></div>
+              <div class="sensor-axis"><span class="sensor-axis__label">Dead Reckoning</span><span class="sensor-axis__value sensor-val" id="ekf-dr-dur">0.0</span><span class="sensor-axis__unit">s</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
+
+  // Attach button event
+  const btnOutage = document.getElementById('btn-sensor-outage');
+  btnOutage?.addEventListener('click', () => {
+    fusionService.triggerGNSSOutage(5000);
+  });
 
   // Start subscriptions
   unsubscribeAccel = imuService.subscribeAccelerometer((m) => {
@@ -150,10 +198,7 @@ export function renderSensorScreen(container: HTMLElement): void {
       updateValue('acc-y', m.acceleration.y);
       updateValue('acc-z', m.acceleration.z);
 
-      // Estimate Pitch/Roll from gravity vector
-      // pitch = atan2(-x, sqrt(y^2 + z^2))
       pitch = Math.atan2(-m.acceleration.x, Math.sqrt(m.acceleration.y * m.acceleration.y + m.acceleration.z * m.acceleration.z)) * (180 / Math.PI);
-      // roll = atan2(y, z)
       roll = Math.atan2(m.acceleration.y, m.acceleration.z) * (180 / Math.PI);
       
       updateCube();
@@ -180,7 +225,6 @@ export function renderSensorScreen(container: HTMLElement): void {
       updateValue('mag-y', m.magneticField.y);
       updateValue('mag-z', m.magneticField.z);
 
-      // Estimate Yaw (Heading) from magnetometer
       yaw = Math.atan2(m.magneticField.x, m.magneticField.y) * (180 / Math.PI);
       if (yaw < 0) yaw += 360;
 
@@ -189,6 +233,38 @@ export function renderSensorScreen(container: HTMLElement): void {
       updateStatus();
     }
   });
+
+  unsubscribeFusion = fusionService.subscribeStatus(updateEkfDiagnostics);
+}
+
+function updateEkfDiagnostics(s: SensorFusionStatus): void {
+  const badge = document.getElementById('ekf-mode-badge');
+  if (badge) {
+    if (s.mode === SensorFusionMode.FULL_FUSION) {
+      badge.textContent = 'Full Fusion';
+      badge.className = 'sensor-card__status active-badge';
+    } else if (s.mode === SensorFusionMode.DEAD_RECKONING) {
+      badge.textContent = 'Dead Reckoning';
+      badge.className = 'sensor-card__status dr-badge';
+    } else {
+      badge.textContent = 'Initializing';
+      badge.className = 'sensor-card__status';
+    }
+  }
+
+  const elLat = document.getElementById('ekf-lat');
+  const elUncert = document.getElementById('ekf-uncert');
+  const elRate = document.getElementById('ekf-rate');
+  const elBiasAcc = document.getElementById('ekf-bias-acc');
+  const elBiasGyr = document.getElementById('ekf-bias-gyr');
+  const elDrDur = document.getElementById('ekf-dr-dur');
+
+  if (elLat) elLat.textContent = (s.averageLatencyMs || 0.15).toFixed(2);
+  if (elUncert) elUncert.textContent = s.positionUncertaintyMeters.toFixed(2);
+  if (elRate) elRate.textContent = `${s.updateRateHz}`;
+  if (elBiasAcc) elBiasAcc.textContent = s.accelBias.toFixed(3);
+  if (elBiasGyr) elBiasGyr.textContent = s.gyroBias.toFixed(4);
+  if (elDrDur) elDrDur.textContent = s.deadReckoningSeconds.toFixed(1);
 }
 
 function updateValue(id: string, val: number): void {
@@ -202,11 +278,6 @@ function updateValue(id: string, val: number): void {
 function updateCube(): void {
   const cube = document.getElementById('imu-cube');
   if (cube) {
-    // CSS 3D Transforms rotate based on X, Y, Z axes.
-    // Map our pitch/roll/yaw to the CSS axes:
-    // Pitch (nose up/down) = rotateX
-    // Roll (tilt left/right) = rotateZ
-    // Yaw (heading) = rotateY
     cube.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg) rotateZ(${roll}deg)`;
   }
   

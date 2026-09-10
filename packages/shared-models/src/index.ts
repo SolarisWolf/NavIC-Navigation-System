@@ -33,6 +33,15 @@ export {
   type IMUProvider,
 } from './imu.types.js';
 
+// ─── Sensor Fusion & EKF Types ───────────────────────────────────────────────
+export {
+  SensorFusionMode,
+  type FusedPositionEstimate,
+  type SensorFusionStatus,
+  type FusedPositionCallback,
+  type SensorFusionStatusCallback,
+} from './sensor-fusion.types.js';
+
 // ─── Navigation Types ────────────────────────────────────────────────────────
 export {
   type Coordinate,
