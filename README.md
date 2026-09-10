@@ -95,7 +95,7 @@ npm run dev --workspace=@navic/web
 | 3 | Local Base Map Integration | ✅ Complete |
 | 4 | IMU Simulator | ✅ Complete |
 | 5 | Extended Kalman Filter / Sensor Fusion | ✅ Complete |
-| 6 | GNSS Position Engine | ⏳ Pending |
+| 6 | GNSS Position Engine | ⏳ In Progress |
 | 7 | Offline POI Database | ⏳ Pending |
 | 8 | Offline Routing Engine | ⏳ Pending |
 | 9 | Navigation Engine | ⏳ Pending |
@@ -110,6 +110,14 @@ npm run dev --workspace=@navic/web
 | 18 | Final Offline Android Navigation | ⏳ Pending |
 | 19 | Performance & Reliability Testing | ⏳ Pending |
 | 20 | Final Validation & Demonstration | ⏳ Pending |
+
+### Completed Milestones
+- **Phase 0**: Monorepo architecture (`shared-models`, `gnss-core`, `sensor-fusion`, `map-core`, `routing-core`, `navigation-core`), logging, error-handling, Vitest testing.
+- **Phase 1**: Responsive SPA shell with modular screens (Dashboard, Map, Satellites, Sensors, Route, Settings).
+- **Phase 2**: Multi-constellation GNSS simulator (NavIC L5/S, GPS, Galileo, BeiDou, GLONASS) with route simulation and SNR/geometry modeling.
+- **Phase 3**: Offline MBTiles tile server and Leaflet map rendering with vehicle tracking.
+- **Phase 4**: 50 Hz IMU Simulator (accelerometer, gyroscope, magnetometer) with real-time 3D attitude visualization.
+- **Phase 5**: 7-state Extended Kalman Filter (EKF) sensor fusion running at 50 Hz with continuous Dead Reckoning during GNSS outages (< 0.1 ms latency).
 
 ## ⚠️ Important Notes
 
