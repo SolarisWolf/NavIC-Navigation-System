@@ -567,3 +567,87 @@
   border-color: #ff5252;
 }
 
+/* Voice Toggle Button */
+.map-btn--voice-active {
+  background: rgba(0, 229, 255, 0.15) !important;
+  color: #00e5ff !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.35) !important;
+}
+
+.map-btn--voice-muted {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  opacity: 0.7;
+}
+
+/* Active Voice Speaking Waveform Badge */
+.map-nav-voice-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 9999px;
+  padding: 2px 8px;
+  margin-top: 4px;
+  width: fit-content;
+  animation: voice-badge-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes voice-badge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(0, 229, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  }
+}
+
+.voice-wave-bar {
+  display: inline-block;
+  width: 2.5px;
+  height: 10px;
+  background: #00e5ff;
+  border-radius: 2px;
+  animation: wave-bar-anim 0.6s infinite ease-in-out alternate;
+}
+
+.voice-wave-bar.bar-1 {
+  height: 6px;
+  animation-delay: 0.1s;
+}
+
+.voice-wave-bar.bar-2 {
+  height: 12px;
+  animation-delay: 0.25s;
+}
+
+.voice-wave-bar.bar-3 {
+  height: 8px;
+  animation-delay: 0.4s;
+}
+
+@keyframes wave-bar-anim {
+  0% {
+    transform: scaleY(0.4);
+  }
+  100% {
+    transform: scaleY(1.4);
+  }
+}
+
+.voice-wave-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #00e5ff;
+  letter-spacing: 0.3px;
+  margin-left: 2px;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+

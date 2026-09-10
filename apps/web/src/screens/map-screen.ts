@@ -24,6 +24,7 @@ import { fusionService } from '../services/fusion-service.js';
 import { poiService } from '../services/poi-service.js';
 import { routingService } from '../services/routing-service.js';
 import { navigationService } from '../services/navigation-service.js';
+import { voiceGuidanceService } from '../services/voice-guidance-service.js';
 import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
 
 let map: L.Map | null = null;
@@ -40,6 +41,8 @@ let unsubscribeFusion: (() => void) | null = null;
 let unsubscribeDest: (() => void) | null = null;
 let unsubscribeRoute: (() => void) | null = null;
 let unsubscribeNav: (() => void) | null = null;
+let unsubscribeVoiceSpeaking: (() => void) | null = null;
+let unsubscribeVoiceSettings: (() => void) | null = null;
 
 let isFollowing = true;
 let isInitialized = false;
@@ -115,6 +118,14 @@ export function renderMapScreen(container: HTMLElement): void {
     unsubscribeNav();
     unsubscribeNav = null;
   }
+  if (unsubscribeVoiceSpeaking) {
+    unsubscribeVoiceSpeaking();
+    unsubscribeVoiceSpeaking = null;
+  }
+  if (unsubscribeVoiceSettings) {
+    unsubscribeVoiceSettings();
+    unsubscribeVoiceSettings = null;
+  }
   if (map) {
     map.remove();
     map = null;
@@ -178,6 +189,13 @@ export function renderMapScreen(container: HTMLElement): void {
               </div>
               <div class="map-nav-instruction" id="map-nav-instruction">Starting Navigation...</div>
               <div class="map-nav-next-step" id="map-nav-next-step">-- km • -- min</div>
+              <!-- Voice Speaking Waveform Badge -->
+              <div class="map-nav-voice-badge" id="map-nav-voice-badge" style="display: none;">
+                <span class="voice-wave-bar bar-1"></span>
+                <span class="voice-wave-bar bar-2"></span>
+                <span class="voice-wave-bar bar-3"></span>
+                <span class="voice-wave-text" id="voice-wave-text">Voice Speaking...</span>
+              </div>
             </div>
             <div class="map-nav-actions">
               <button class="btn btn--primary btn--sm" id="btn-start-nav-map" style="display: none;">
@@ -225,6 +243,7 @@ export function renderMapScreen(container: HTMLElement): void {
         <button class="map-btn" id="btn-recenter" title="Recenter">⌖</button>
         <button class="map-btn map-btn--active" id="btn-toggle-pois" title="Toggle POIs">📍</button>
         <button class="map-btn" id="btn-outage" title="Simulate GNSS Outage (Test Dead Reckoning)">🚇 Outage</button>
+        <button class="map-btn" id="btn-voice-toggle" title="Toggle Voice Guidance">🔊</button>
         <button class="map-btn" id="btn-manual-reroute" title="Recalculate Route" style="display: none;">🔄 Re-route</button>
       </div>
     </div>
@@ -357,6 +376,47 @@ export function renderMapScreen(container: HTMLElement): void {
       navigationService.stopNavigation();
     }
     routingService.clearRoute();
+  });
+
+  // Voice Controls & Live Speaking Feedback
+  const btnVoiceToggle = document.getElementById('btn-voice-toggle');
+  const voiceBadge = document.getElementById('map-nav-voice-badge');
+  const voiceText = document.getElementById('voice-wave-text');
+
+  function updateVoiceButtonUI(settings = voiceGuidanceService.getSettings()) {
+    if (!btnVoiceToggle) return;
+    if (settings.muted) {
+      btnVoiceToggle.textContent = '🔇';
+      btnVoiceToggle.title = 'Voice Muted (Click to Unmute)';
+      btnVoiceToggle.classList.add('map-btn--voice-muted');
+      btnVoiceToggle.classList.remove('map-btn--voice-active');
+    } else {
+      btnVoiceToggle.textContent = '🔊';
+      btnVoiceToggle.title = 'Voice Guidance On (Click to Mute)';
+      btnVoiceToggle.classList.add('map-btn--voice-active');
+      btnVoiceToggle.classList.remove('map-btn--voice-muted');
+    }
+  }
+
+  btnVoiceToggle?.addEventListener('click', () => {
+    voiceGuidanceService.toggleMute();
+  });
+
+  unsubscribeVoiceSettings = voiceGuidanceService.onSettingsChange((settings) => {
+    updateVoiceButtonUI(settings);
+  });
+  updateVoiceButtonUI();
+
+  unsubscribeVoiceSpeaking = voiceGuidanceService.onSpeakingChange((isSpeaking, text) => {
+    if (!voiceBadge) return;
+    if (isSpeaking && !voiceGuidanceService.getSettings().muted) {
+      voiceBadge.style.display = 'inline-flex';
+      if (voiceText) {
+        voiceText.textContent = text || 'Voice Guidance...';
+      }
+    } else {
+      voiceBadge.style.display = 'none';
+    }
   });
 
   // Check initial destination & route

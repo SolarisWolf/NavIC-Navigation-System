@@ -17,6 +17,7 @@ import {
 import {
   NavigationEngine,
   ReroutingManager,
+  VoicePromptGenerator,
   type NavigationStateListener,
   type ManeuverListener,
   type OffRouteListener,
@@ -29,10 +30,12 @@ import {
 } from '@navic/navigation-core';
 import { fusionService } from './fusion-service.js';
 import { routingService } from './routing-service.js';
+import { voiceGuidanceService } from './voice-guidance-service.js';
 
 class NavigationServiceImpl {
   private engine: NavigationEngine;
   private reroutingManager: ReroutingManager;
+  private voiceGenerator: VoicePromptGenerator;
 
   private stateListeners: Set<NavigationStateListener> = new Set();
   private maneuverListeners: Set<ManeuverListener> = new Set();
@@ -48,9 +51,20 @@ class NavigationServiceImpl {
       routingEngine: routingService.getEngine(),
       cooldownMs: 3000,
     });
+    this.voiceGenerator = new VoicePromptGenerator();
+
+    // Hook voice prompt output to voiceGuidanceService audio playback
+    this.voiceGenerator.onPrompt((prompt) => {
+      voiceGuidanceService.speak(prompt);
+    });
 
     // Bubble engine events to our subscribers
     this.engine.onStateChange((state) => {
+      // Process voice guidance if actively navigating on route
+      if (state.mode === NavigationMode.Active && state.currentPosition) {
+        this.voiceGenerator.processNavigationState(state);
+      }
+
       for (const listener of this.stateListeners) {
         try {
           listener(state);
@@ -71,6 +85,12 @@ class NavigationServiceImpl {
     });
 
     this.engine.onOffRoute((status) => {
+      // Spoken off-route notification when vehicle first leaves route
+      if (status.justDeviated && this.engine.isNavigating) {
+        this.voiceGenerator.notifyOffRoute();
+        this.triggerReroute(false);
+      }
+
       for (const listener of this.offRouteListeners) {
         try {
           listener(status);
@@ -78,14 +98,11 @@ class NavigationServiceImpl {
           console.error('[NavigationService] Error in offRoute listener', e);
         }
       }
-
-      // Automatically trigger re-route when vehicle just deviated and is actively navigating
-      if (status.justDeviated && this.engine.isNavigating) {
-        this.triggerReroute(false);
-      }
     });
 
     this.engine.onArrival((dest) => {
+      this.voiceGenerator.notifyArrival();
+
       for (const listener of this.arrivalListeners) {
         try {
           listener(dest);
@@ -107,6 +124,8 @@ class NavigationServiceImpl {
     });
 
     this.reroutingManager.onRerouteSuccess((newRoute) => {
+      this.voiceGenerator.notifyRerouteCompleted(newRoute.distance);
+
       for (const listener of this.rerouteSuccessListeners) {
         try {
           listener(newRoute);
@@ -168,6 +187,10 @@ class NavigationServiceImpl {
     return this.reroutingManager.isCalculating;
   }
 
+  public getVoiceGenerator(): VoicePromptGenerator {
+    return this.voiceGenerator;
+  }
+
   /**
    * Starts active turn-by-turn navigation.
    */
@@ -178,7 +201,15 @@ class NavigationServiceImpl {
     }
 
     this.reroutingManager.reset();
-    return this.engine.startNavigation(targetRoute);
+    this.voiceGenerator.reset();
+    const state = this.engine.startNavigation(targetRoute);
+
+    // Announce departure instruction
+    const destName = targetRoute.instructions[targetRoute.instructions.length - 1]?.roadName || 'destination';
+    const firstRoad = targetRoute.instructions[0]?.roadName;
+    this.voiceGenerator.notifyNavigationStarted(destName, firstRoad);
+
+    return state;
   }
 
   /**
@@ -186,6 +217,8 @@ class NavigationServiceImpl {
    */
   public stopNavigation(): NavigationState {
     this.reroutingManager.reset();
+    this.voiceGenerator.reset();
+    voiceGuidanceService.cancel();
     return this.engine.stopNavigation();
   }
 

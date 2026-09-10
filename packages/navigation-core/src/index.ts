@@ -61,6 +61,23 @@ export {
   type RerouteFailedListener,
 } from './rerouting/rerouting-manager';
 
+// Voice Guidance & Prompts
+export {
+  VoicePromptGenerator,
+} from './voice/voice-prompt-generator';
+
+export {
+  type VoicePrompt,
+  type VoicePromptStage,
+  type VoicePromptPriority,
+  type VoicePromptListener,
+  type VoicePromptThresholds,
+  type VoiceChimeType,
+  type VoiceSettings,
+  DEFAULT_VOICE_THRESHOLDS,
+  DEFAULT_VOICE_SETTINGS,
+} from './voice/types';
+
 // Re-export navigation-related types for convenience
 export type {
   NavigationState,
