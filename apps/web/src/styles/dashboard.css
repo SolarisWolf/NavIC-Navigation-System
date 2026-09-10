@@ -1,0 +1,87 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard Screen Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dashboard {
+  animation: screen-enter 250ms ease-out;
+}
+
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* GNSS Status card accent */
+.dashboard .card--gnss {
+  border-top: 2px solid var(--color-gps);
+}
+
+.dashboard .card--gnss .card__title-icon {
+  color: var(--color-gps);
+}
+
+/* Satellites card accent */
+.dashboard .card--satellites {
+  border-top: 2px solid var(--accent-purple);
+}
+
+.dashboard .card--satellites .card__title-icon {
+  color: var(--accent-purple);
+}
+
+/* Navigation card accent */
+.dashboard .card--navigation {
+  border-top: 2px solid var(--accent-warning);
+}
+
+.dashboard .card--navigation .card__title-icon {
+  color: var(--accent-warning);
+}
+
+/* Sensor Fusion card accent */
+.dashboard .card--fusion {
+  border-top: 2px solid var(--accent-info);
+}
+
+.dashboard .card--fusion .card__title-icon {
+  color: var(--accent-info);
+}
+
+/* Constellation summary within satellites card */
+.constellation-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.constellation-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.constellation-row__name {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.constellation-row__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.constellation-row__count--empty {
+  color: var(--text-muted);
+}

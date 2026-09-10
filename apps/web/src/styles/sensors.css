@@ -1,0 +1,110 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Sensor Screen Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sensor-screen {
+  animation: screen-enter 250ms ease-out;
+}
+
+.sensor-screen__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 1000px) {
+  .sensor-screen__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sensor Card */
+.sensor-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: all var(--transition-base);
+}
+
+.sensor-card:hover {
+  border-color: var(--border-hover);
+}
+
+.sensor-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.sensor-card__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.sensor-card__status {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Axis gauges within sensor card */
+.sensor-axes {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.sensor-axis {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.sensor-axis__label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-info);
+}
+
+.sensor-axis__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 70px;
+  text-align: center;
+}
+
+.sensor-axis__value--empty {
+  color: var(--text-muted);
+}
+
+.sensor-axis__unit {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Sensor fusion status row */
+.fusion-status {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .fusion-status {
+    grid-template-columns: 1fr;
+  }
+}

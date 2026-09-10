@@ -1,0 +1,101 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Settings Screen Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.settings-screen {
+  animation: screen-enter 250ms ease-out;
+  max-width: 720px;
+}
+
+.settings-group {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.settings-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.settings-group__header-icon {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid rgba(79, 140, 255, 0.05);
+  transition: background var(--transition-fast);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:hover {
+  background: var(--bg-surface-hover);
+}
+
+.settings-row__label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.settings-row__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.settings-row__value--muted {
+  color: var(--text-muted);
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--bg-elevated);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border: 1px solid var(--border-default);
+}
+
+.toggle-switch--on {
+  background: rgba(0, 230, 118, 0.2);
+  border-color: rgba(0, 230, 118, 0.3);
+}
+
+.toggle-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.toggle-switch--on .toggle-switch__knob {
+  left: 20px;
+  background: var(--accent-secondary);
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.3);
+}
