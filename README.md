@@ -97,8 +97,8 @@ npm run dev --workspace=@navic/web
 | 5 | Extended Kalman Filter / Sensor Fusion | ✅ Complete |
 | 6 | GNSS Position Engine | ✅ Complete |
 | 7 | Offline POI Database | ✅ Complete |
-| 8 | Offline Routing Engine | ⏳ In Progress |
-| 9 | Navigation Engine | ⏳ Pending |
+| 8 | Offline Routing Engine | ✅ Complete |
+| 9 | Navigation Engine | ⏳ In Progress |
 | 10 | Re-routing | ⏳ Pending |
 | 11 | Voice Navigation | ⏳ Pending |
 | 12 | Complete Web Simulation | ⏳ Pending |
@@ -120,6 +120,7 @@ npm run dev --workspace=@navic/web
 - **Phase 5**: 7-state Extended Kalman Filter (EKF) sensor fusion running at 50 Hz with continuous Dead Reckoning during GNSS outages (< 0.1 ms latency).
 - **Phase 6**: GNSS Position Engine with line-of-sight satellite geometry Dilution of Precision (HDOP, VDOP, PDOP, GDOP), kinematic outlier rejection, exponential coordinate smoothing, stationary bearing lock, and NavIC-assisted fix identification.
 - **Phase 7**: Offline POI Database with 49 Delhi amenities across 10 categories, sub-0.1ms fuzzy & spatial search, category chips, live distance & bearing calculation, Route Planning destination lock, and interactive Leaflet map overlays with dark popups.
+- **Phase 8**: Offline Routing Engine with 58-node/146-edge Delhi NCR topological road graph, sub-millisecond A* pathfinding (Car, Bicycle, Walking profiles; Fastest vs Shortest optimization), angular turn-by-turn maneuver classification, Route Planning step list, and dynamic high-contrast map polyline with floating navigation banner.
 
 ## ⚠️ Important Notes
 

@@ -1,27 +1,30 @@
 /**
  * @navic/routing-core
  *
- * Offline routing engine.
- *
- * This package will contain:
- * - Offline Road Graph (Phase 8)
- * - Route Calculator (Phase 8)
- * - Map Matching (Phase 9)
- * - Re-routing Engine (Phase 10)
- *
- * The project specification requires GraphHopper for offline path calculation.
- *
- * Architecture:
- *   Current Position + Destination
- *          ↓
- *   Offline Road Graph (OSM data)
- *          ↓
- *   Routing Engine (Dijkstra/A*)
- *          ↓
- *   Route (geometry + turn instructions)
+ * Offline routing engine, graph modeling, A* pathfinding,
+ * and turn-by-turn maneuver instruction generation.
  */
 
-// Re-export routing-related types for convenience
+// Road Graph
+export {
+  RoadGraph,
+  type RoadNode,
+  type RoadEdge,
+  type RoadType,
+} from './graph/road-graph.js';
+
+export { buildDelhiRoadGraph } from './graph/delhi-network.js';
+
+// Algorithms & Engine
+export { AStarRouter, type AStarResult } from './engine/astar-router.js';
+export { InstructionGenerator } from './engine/instruction-generator.js';
+export {
+  OfflineRoutingEngine,
+  type RouteRequest,
+  type RoutingEngineOptions,
+} from './engine/routing-engine.js';
+
+// Re-export routing-related types from shared-models for convenience
 export type {
   Route,
   NavigationInstruction,

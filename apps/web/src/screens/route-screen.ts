@@ -3,14 +3,20 @@
  *
  * Destination search with offline POI database, category filtering,
  * live proximity calculations, routing profile selection, and
- * destination assignment for offline navigation.
+ * offline path calculation with turn-by-turn maneuvers (Phase 8).
  */
 
 import {
   type POI,
   POICategory,
+  type Route,
+  RoutingProfile,
+  RouteOptimization,
+  ManeuverType,
+  type NavigationInstruction,
 } from '@navic/shared-models';
 import { poiService } from '../services/poi-service.js';
+import { routingService } from '../services/routing-service.js';
 
 export const CATEGORY_ICONS: Record<string, string> = {
   [POICategory.Hospital]: '🏥',
@@ -56,27 +62,58 @@ export const CATEGORY_LABELS: Record<string, string> = {
   [POICategory.Other]: 'POI',
 };
 
+export const MANEUVER_ICONS: Record<ManeuverType, string> = {
+  [ManeuverType.Depart]: '🚀',
+  [ManeuverType.Arrive]: '🏁',
+  [ManeuverType.KeepStraight]: '⬆️',
+  [ManeuverType.KeepLeft]: '↖️',
+  [ManeuverType.KeepRight]: '↗️',
+  [ManeuverType.TurnRight]: '➡️',
+  [ManeuverType.TurnLeft]: '⬅️',
+  [ManeuverType.TurnSlightRight]: '↗️',
+  [ManeuverType.TurnSlightLeft]: '↖️',
+  [ManeuverType.TurnSharpRight]: '↪️',
+  [ManeuverType.TurnSharpLeft]: '↩️',
+  [ManeuverType.UTurn]: '🔄',
+  [ManeuverType.Roundabout]: '⭕',
+  [ManeuverType.RoundaboutExit]: '↗️',
+  [ManeuverType.Merge]: '🔀',
+  [ManeuverType.ExitHighway]: '🛣️',
+  [ManeuverType.Fork]: '🍴',
+};
+
 function formatDistance(meters?: number): string {
   if (meters === undefined) return '';
   if (meters < 1000) return `${Math.round(meters)} m`;
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)} sec`;
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return `${hours} hr ${remMins} min`;
+}
+
 export function renderRouteScreen(container: HTMLElement): void {
   let selectedCategory: POICategory | null = null;
   let searchQuery = '';
-  let activeProfile = 'car';
-  let activeOptimization = 'fastest';
+  let activeProfile: RoutingProfile = routingService.getProfile();
+  let activeOptimization: RouteOptimization = routingService.getOptimization();
+  let isCalculating = false;
 
   const destination = poiService.getSelectedDestination();
   const vehicleCoord = poiService.getVehicleCoordinate();
+  const currentRoute = routingService.getCurrentRoute();
 
   container.innerHTML = `
     <div class="route-screen screen">
       <div class="screen__header">
         <div>
           <h1 class="screen__title">Route Planning</h1>
-          <p class="screen__subtitle">Offline search & routing powered by local POI database</p>
+          <p class="screen__subtitle">Offline road pathfinding & turn-by-turn routing powered by GraphHopper engine</p>
         </div>
       </div>
 
@@ -167,17 +204,17 @@ export function renderRouteScreen(container: HTMLElement): void {
           <div class="route-options__group">
             <span class="route-options__label">Profile</span>
             <div class="toggle-group" id="profile-toggle">
-              <div class="toggle-group__item toggle-group__item--active" data-profile="car">🚗 Car</div>
-              <div class="toggle-group__item" data-profile="bicycle">🚲 Bicycle</div>
-              <div class="toggle-group__item" data-profile="walking">🚶 Walking</div>
+              <div class="toggle-group__item ${activeProfile === RoutingProfile.Car ? 'toggle-group__item--active' : ''}" data-profile="${RoutingProfile.Car}">🚗 Car</div>
+              <div class="toggle-group__item ${activeProfile === RoutingProfile.Bicycle ? 'toggle-group__item--active' : ''}" data-profile="${RoutingProfile.Bicycle}">🚲 Bicycle</div>
+              <div class="toggle-group__item ${activeProfile === RoutingProfile.Walking ? 'toggle-group__item--active' : ''}" data-profile="${RoutingProfile.Walking}">🚶 Walking</div>
             </div>
           </div>
 
           <div class="route-options__group">
             <span class="route-options__label">Optimize</span>
             <div class="toggle-group" id="opt-toggle">
-              <div class="toggle-group__item toggle-group__item--active" data-opt="fastest">⚡ Fastest</div>
-              <div class="toggle-group__item" data-opt="shortest">📏 Shortest</div>
+              <div class="toggle-group__item ${activeOptimization === RouteOptimization.Fastest ? 'toggle-group__item--active' : ''}" data-opt="${RouteOptimization.Fastest}">⚡ Fastest</div>
+              <div class="toggle-group__item ${activeOptimization === RouteOptimization.Shortest ? 'toggle-group__item--active' : ''}" data-opt="${RouteOptimization.Shortest}">📏 Shortest</div>
             </div>
           </div>
         </div>
@@ -187,15 +224,15 @@ export function renderRouteScreen(container: HTMLElement): void {
           <button class="btn btn--primary" id="btn-calculate" ${destination ? '' : 'disabled'}>
             🧭 Calculate Route
           </button>
-          <button class="btn btn--secondary" id="btn-view-map" ${destination ? '' : 'disabled'}>
+          <button class="btn btn--secondary" id="btn-view-map" ${currentRoute || destination ? '' : 'disabled'}>
             📍 View on Map
           </button>
         </div>
       </div>
 
-      <!-- Route Summary -->
+      <!-- Route Summary & Turn-by-Turn Maneuvers -->
       <div class="route-summary" id="route-summary-panel">
-        ${renderRouteSummary(destination, activeProfile, activeOptimization)}
+        ${renderRouteSummary(currentRoute, destination, activeProfile, activeOptimization)}
       </div>
     </div>
   `;
@@ -269,6 +306,50 @@ export function renderRouteScreen(container: HTMLElement): void {
     });
   }
 
+  async function executeRouteCalculation(): Promise<void> {
+    const curDest = poiService.getSelectedDestination();
+    if (!curDest || isCalculating) return;
+
+    isCalculating = true;
+    const calcBtn = container.querySelector('#btn-calculate') as HTMLButtonElement | null;
+    if (calcBtn) {
+      calcBtn.disabled = true;
+      calcBtn.textContent = '⏳ Calculating Route...';
+    }
+
+    try {
+      const route = await routingService.calculateRoute({
+        profile: activeProfile,
+        optimization: activeOptimization,
+      });
+
+      const summary = container.querySelector('#route-summary-panel');
+      if (summary && route) {
+        summary.innerHTML = renderRouteSummary(route, curDest, activeProfile, activeOptimization);
+        attachSummaryListeners();
+      }
+
+      const mapBtn = container.querySelector('#btn-view-map') as HTMLButtonElement | null;
+      if (mapBtn) mapBtn.disabled = false;
+    } catch (e: any) {
+      const summary = container.querySelector('#route-summary-panel');
+      if (summary) {
+        summary.innerHTML = `
+          <div class="route-summary__title">Route Error</div>
+          <div class="route-error-banner">
+            <span>⚠️ Could not find navigable path: ${e.message}</span>
+          </div>
+        `;
+      }
+    } finally {
+      isCalculating = false;
+      if (calcBtn) {
+        calcBtn.disabled = false;
+        calcBtn.textContent = '🧭 Calculate Route';
+      }
+    }
+  }
+
   function selectDestination(poi: POI): void {
     poiService.setDestination(poi);
     const input = container.querySelector('#route-destination-input') as HTMLInputElement | null;
@@ -290,16 +371,15 @@ export function renderRouteScreen(container: HTMLElement): void {
     const mapBtn = container.querySelector('#btn-view-map') as HTMLButtonElement | null;
     if (mapBtn) mapBtn.disabled = false;
 
-    const summary = container.querySelector('#route-summary-panel');
-    if (summary) {
-      summary.innerHTML = renderRouteSummary(poi, activeProfile, activeOptimization);
-    }
-
+    // Immediately trigger route calculation
+    executeRouteCalculation();
     updateResultsList();
   }
 
   function clearDestination(): void {
     poiService.setDestination(null);
+    routingService.clearRoute();
+
     const input = container.querySelector('#route-destination-input') as HTMLInputElement | null;
     if (input) {
       input.value = '';
@@ -322,7 +402,7 @@ export function renderRouteScreen(container: HTMLElement): void {
 
     const summary = container.querySelector('#route-summary-panel');
     if (summary) {
-      summary.innerHTML = renderRouteSummary(null, activeProfile, activeOptimization);
+      summary.innerHTML = renderRouteSummary(null, null, activeProfile, activeOptimization);
     }
 
     searchQuery = '';
@@ -334,9 +414,17 @@ export function renderRouteScreen(container: HTMLElement): void {
     cardClear?.addEventListener('click', clearDestination);
   }
 
+  function attachSummaryListeners(): void {
+    const navMapBtn = container.querySelector('#btn-start-nav');
+    navMapBtn?.addEventListener('click', () => {
+      window.location.hash = '#/map';
+    });
+  }
+
   // Initial list rendering
   updateResultsList();
   attachCardListeners();
+  attachSummaryListeners();
 
   // Search input events
   const searchInput = container.querySelector('#route-destination-input') as HTMLInputElement | null;
@@ -380,10 +468,9 @@ export function renderRouteScreen(container: HTMLElement): void {
     item.addEventListener('click', () => {
       profileToggle.querySelectorAll('.toggle-group__item').forEach((i) => i.classList.remove('toggle-group__item--active'));
       item.classList.add('toggle-group__item--active');
-      activeProfile = item.getAttribute('data-profile') || 'car';
-      const curDest = poiService.getSelectedDestination();
-      const summary = container.querySelector('#route-summary-panel');
-      if (summary) summary.innerHTML = renderRouteSummary(curDest, activeProfile, activeOptimization);
+      activeProfile = (item.getAttribute('data-profile') || 'car') as RoutingProfile;
+      routingService.setProfile(activeProfile);
+      executeRouteCalculation();
     });
   });
 
@@ -393,22 +480,16 @@ export function renderRouteScreen(container: HTMLElement): void {
     item.addEventListener('click', () => {
       optToggle.querySelectorAll('.toggle-group__item').forEach((i) => i.classList.remove('toggle-group__item--active'));
       item.classList.add('toggle-group__item--active');
-      activeOptimization = item.getAttribute('data-opt') || 'fastest';
-      const curDest = poiService.getSelectedDestination();
-      const summary = container.querySelector('#route-summary-panel');
-      if (summary) summary.innerHTML = renderRouteSummary(curDest, activeProfile, activeOptimization);
+      activeOptimization = (item.getAttribute('data-opt') || 'fastest') as RouteOptimization;
+      routingService.setOptimization(activeOptimization);
+      executeRouteCalculation();
     });
   });
 
   // Button Actions
   const btnCalculate = container.querySelector('#btn-calculate');
   btnCalculate?.addEventListener('click', () => {
-    const curDest = poiService.getSelectedDestination();
-    if (!curDest) return;
-    const summary = container.querySelector('#route-summary-panel');
-    if (summary) {
-      summary.innerHTML = renderCalculatedRoute(curDest, activeProfile, activeOptimization);
-    }
+    executeRouteCalculation();
   });
 
   const btnViewMap = container.querySelector('#btn-view-map');
@@ -423,7 +504,7 @@ function renderDestinationCard(poi: POI | null): string {
   const catLabel = CATEGORY_LABELS[poi.category] || poi.category;
   const vehicleCoord = poiService.getVehicleCoordinate();
   
-  // Calculate distance
+  // Calculate direct distance
   const results = poiService.search(poi.name, { center: vehicleCoord, limit: 1 });
   const distStr = results.length > 0 && results[0].distanceMeters !== undefined
     ? formatDistance(results[0].distanceMeters)
@@ -450,7 +531,12 @@ function renderDestinationCard(poi: POI | null): string {
   `;
 }
 
-function renderRouteSummary(destination: POI | null, profile: string, opt: string): string {
+function renderRouteSummary(
+  route: Route | null,
+  destination: POI | null,
+  profile: RoutingProfile,
+  opt: RouteOptimization
+): string {
   if (!destination) {
     return `
       <div class="route-summary__title">Route Summary</div>
@@ -464,82 +550,82 @@ function renderRouteSummary(destination: POI | null, profile: string, opt: strin
     `;
   }
 
+  if (!route) {
+    return `
+      <div class="route-summary__title">Route Readiness</div>
+      <div class="route-summary__notice">
+        <span>💡 Destination locked: <strong>${destination.name}</strong>. Click <strong>"🧭 Calculate Route"</strong> to generate road path and turn instructions.</span>
+      </div>
+    `;
+  }
+
   const icon = CATEGORY_ICONS[destination.category] || '📍';
-  const vehicleCoord = poiService.getVehicleCoordinate();
-  const results = poiService.search(destination.name, { center: vehicleCoord, limit: 1 });
-  const distMeters = results.length > 0 && results[0].distanceMeters ? results[0].distanceMeters : 5000;
-  
-  // Straight line estimation before GraphHopper (Phase 8)
-  const estDistanceKm = (distMeters * 1.25 / 1000).toFixed(1); // 1.25 road curvature factor
-  const speedKmh = profile === 'car' ? 35 : profile === 'bicycle' ? 15 : 4.5;
-  const etaMinutes = Math.max(1, Math.round((parseFloat(estDistanceKm) / speedKmh) * 60));
+  const distKm = (route.distance / 1000).toFixed(1);
+  const durationStr = formatDuration(route.estimatedTime);
+  const turnCount = route.instructions.length;
 
   return `
-    <div class="route-summary__title">Route Readiness</div>
-    <div class="route-preview-grid">
-      <div class="route-metric-card">
-        <span class="route-metric-label">Target POI</span>
-        <span class="route-metric-value">${icon} ${destination.name}</span>
-      </div>
-      <div class="route-metric-card">
-        <span class="route-metric-label">Est. Distance</span>
-        <span class="route-metric-value">~${estDistanceKm} km</span>
-      </div>
-      <div class="route-metric-card">
-        <span class="route-metric-label">Est. Travel Time</span>
-        <span class="route-metric-value">~${etaMinutes} min</span>
-      </div>
-      <div class="route-metric-card">
-        <span class="route-metric-label">Profile & Opt</span>
-        <span class="route-metric-value" style="text-transform: capitalize;">${profile} • ${opt}</span>
-      </div>
-    </div>
-    <div class="route-summary__notice">
-      <span>💡 POI destination ready. Click <strong>"🧭 Calculate Route"</strong> or preview on the Map! Full turn-by-turn road network routing will run locally in Phase 8 (GraphHopper).</span>
-    </div>
-  `;
-}
-
-function renderCalculatedRoute(destination: POI, profile: string, opt: string): string {
-  const icon = CATEGORY_ICONS[destination.category] || '📍';
-  const vehicleCoord = poiService.getVehicleCoordinate();
-  const results = poiService.search(destination.name, { center: vehicleCoord, limit: 1 });
-  const distMeters = results.length > 0 && results[0].distanceMeters ? results[0].distanceMeters : 4500;
-  const estDistanceKm = (distMeters * 1.28 / 1000).toFixed(1);
-  const speedKmh = profile === 'car' ? 38 : profile === 'bicycle' ? 16 : 4.5;
-  const etaMinutes = Math.max(1, Math.round((parseFloat(estDistanceKm) / speedKmh) * 60));
-
-  return `
-    <div class="route-summary__title">Route Calculated (Offline Preview)</div>
+    <div class="route-summary__title">Calculated Route Details</div>
+    
+    <!-- Top metrics bar -->
     <div class="route-success-banner">
-      <span class="banner-icon">✅</span>
-      <div>
-        <div class="banner-title">Destination Locked: ${destination.name}</div>
-        <div class="banner-subtitle">Estimated ${estDistanceKm} km via optimal local path (${etaMinutes} min)</div>
+      <span class="banner-icon">🛣️</span>
+      <div style="flex: 1;">
+        <div class="banner-title">${icon} ${destination.name}</div>
+        <div class="banner-subtitle">
+          ${distKm} km • ${durationStr} • ${turnCount} steps (${profile.toUpperCase()} • ${opt.toUpperCase()})
+        </div>
       </div>
+      <button class="btn btn--primary btn--sm" id="btn-start-nav">
+        🗺️ View on Map
+      </button>
     </div>
+
+    <!-- Quick Stats Grid -->
     <div class="route-preview-grid" style="margin-top: var(--space-4);">
       <div class="route-metric-card">
-        <span class="route-metric-label">Navigation Target</span>
-        <span class="route-metric-value">${icon} ${destination.name}</span>
-      </div>
-      <div class="route-metric-card">
         <span class="route-metric-label">Total Distance</span>
-        <span class="route-metric-value">${estDistanceKm} km</span>
+        <span class="route-metric-value">${distKm} km</span>
       </div>
       <div class="route-metric-card">
-        <span class="route-metric-label">Est. Duration</span>
-        <span class="route-metric-value">${etaMinutes} mins</span>
+        <span class="route-metric-label">Estimated Time</span>
+        <span class="route-metric-value">${durationStr}</span>
       </div>
       <div class="route-metric-card">
-        <span class="route-metric-label">Routing Status</span>
-        <span class="route-metric-value" style="color: var(--accent-secondary);">Ready for Map</span>
+        <span class="route-metric-label">Maneuvers</span>
+        <span class="route-metric-value">${turnCount} steps</span>
+      </div>
+      <div class="route-metric-card">
+        <span class="route-metric-label">Routing Engine</span>
+        <span class="route-metric-value" style="color: var(--accent-secondary);">Offline A* Graph</span>
       </div>
     </div>
-    <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3);">
-      <button class="btn btn--primary" onclick="window.location.hash='#/map'">
-        🗺️ Start Navigation on Map
-      </button>
+
+    <!-- Turn-by-Turn Directions List -->
+    <div class="route-directions-section">
+      <div class="route-directions-header">Turn-by-Turn Navigation Instructions</div>
+      <div class="route-instructions-list">
+        ${route.instructions
+          .map((step, idx) => {
+            const stepIcon = MANEUVER_ICONS[step.maneuver] || '➡️';
+            const distNextStr = step.distanceToNext > 0 ? formatDistance(step.distanceToNext) : '';
+            return `
+              <div class="instruction-item">
+                <div class="instruction-item__icon">${stepIcon}</div>
+                <div class="instruction-item__content">
+                  <div class="instruction-item__desc">${step.description}</div>
+                  <div class="instruction-item__road">${step.roadName}</div>
+                </div>
+                ${
+                  distNextStr
+                    ? `<div class="instruction-item__dist">${distNextStr}</div>`
+                    : ''
+                }
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
     </div>
   `;
 }

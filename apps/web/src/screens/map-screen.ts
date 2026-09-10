@@ -4,25 +4,30 @@
  * Displays the Leaflet map with offline MBTiles support.
  * Tracks the vehicle position with high-rate (50 Hz) Extended Kalman Filter
  * sensor fusion, with support for seamless Dead Reckoning during GNSS outages.
- * Displays offline POIs, category pins, and selected destination lines.
+ * Displays offline POIs, category pins, active destination radar marker,
+ * multi-segment road route polyline, and turn navigation guidance banner (Phase 8).
  */
 
 import L from 'leaflet';
-import { type FusedPositionEstimate, SensorFusionMode, type POI } from '@navic/shared-models';
+import { type FusedPositionEstimate, SensorFusionMode, type POI, type Route, ManeuverType } from '@navic/shared-models';
 import { fusionService } from '../services/fusion-service.js';
 import { poiService } from '../services/poi-service.js';
-import { CATEGORY_ICONS, CATEGORY_LABELS } from './route-screen.js';
+import { routingService } from '../services/routing-service.js';
+import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
 
 let map: L.Map | null = null;
 let vehicleMarker: L.Marker | null = null;
 let pathLine: L.Polyline | null = null;
 let destinationMarker: L.Marker | null = null;
 let destinationLine: L.Polyline | null = null;
+let routePolyline: L.Polyline | null = null;
+let routeCasingPolyline: L.Polyline | null = null;
 let poiLayerGroup: L.LayerGroup | null = null;
 let showPois = true;
 
 let unsubscribeFusion: (() => void) | null = null;
 let unsubscribeDest: (() => void) | null = null;
+let unsubscribeRoute: (() => void) | null = null;
 
 let isFollowing = true;
 let isInitialized = false;
@@ -90,6 +95,10 @@ export function renderMapScreen(container: HTMLElement): void {
     unsubscribeDest();
     unsubscribeDest = null;
   }
+  if (unsubscribeRoute) {
+    unsubscribeRoute();
+    unsubscribeRoute = null;
+  }
   if (map) {
     map.remove();
     map = null;
@@ -114,7 +123,7 @@ export function renderMapScreen(container: HTMLElement): void {
       <div class="screen__header">
         <div>
           <h1 class="screen__title">Map</h1>
-          <p class="screen__subtitle">Offline map tracking powered by 50 Hz EKF Sensor Fusion & POI Database</p>
+          <p class="screen__subtitle">Offline map tracking powered by 50 Hz EKF Sensor Fusion & Offline Road Routing</p>
         </div>
         <div class="map-screen__top-bar">
           <span class="status-badge status-badge--idle" id="map-fix-badge">Awaiting Fix</span>
@@ -122,7 +131,17 @@ export function renderMapScreen(container: HTMLElement): void {
         </div>
       </div>
 
-      <div class="map-container" id="map-view"></div>
+      <div class="map-container" id="map-view">
+        <!-- Floating Navigation Turn Guidance Banner -->
+        <div class="map-nav-banner" id="map-nav-banner" style="display: none;">
+          <div class="map-nav-icon" id="map-nav-icon">🧭</div>
+          <div class="map-nav-info">
+            <div class="map-nav-instruction" id="map-nav-instruction">Starting Navigation...</div>
+            <div class="map-nav-meta" id="map-nav-meta">-- km • -- min</div>
+          </div>
+          <button class="map-nav-close" id="btn-close-nav" title="Clear Route">✕</button>
+        </div>
+      </div>
 
       <div class="map-controls">
         <button class="map-btn map-btn--active" id="btn-follow" title="Follow Vehicle">🎯</button>
@@ -157,12 +176,29 @@ export function renderMapScreen(container: HTMLElement): void {
     opacity: 0.8,
   }).addTo(map);
 
-  // Destination line connecting vehicle to target
+  // Destination straight line (fallback if no road route calculated)
   destinationLine = L.polyline([], {
     color: '#4f8cff',
     dashArray: '6, 8',
     weight: 3,
     opacity: 0.85,
+  }).addTo(map);
+
+  // Road Route Polylines (Casing + Vibrant core)
+  routeCasingPolyline = L.polyline([], {
+    color: '#0d47a1',
+    weight: 7,
+    opacity: 0.85,
+    lineCap: 'round',
+    lineJoin: 'round',
+  }).addTo(map);
+
+  routePolyline = L.polyline([], {
+    color: '#00e5ff',
+    weight: 4,
+    opacity: 0.95,
+    lineCap: 'round',
+    lineJoin: 'round',
   }).addTo(map);
 
   // Initialize POI Layer Group
@@ -180,6 +216,7 @@ export function renderMapScreen(container: HTMLElement): void {
   const btnRecenter = document.getElementById('btn-recenter');
   const btnTogglePois = document.getElementById('btn-toggle-pois');
   const btnOutage = document.getElementById('btn-outage');
+  const btnCloseNav = document.getElementById('btn-close-nav');
 
   btnFollow?.addEventListener('click', () => {
     isFollowing = !isFollowing;
@@ -213,16 +250,72 @@ export function renderMapScreen(container: HTMLElement): void {
     fusionService.triggerGNSSOutage(5000); // 5s GNSS outage
   });
 
-  // Check initial destination
+  btnCloseNav?.addEventListener('click', () => {
+    routingService.clearRoute();
+  });
+
+  // Check initial destination & route
   updateDestinationMarker(poiService.getSelectedDestination());
+  updateRouteDisplay(routingService.getCurrentRoute());
 
   // Subscribe to destination changes
   unsubscribeDest = poiService.onDestinationChange((dest) => {
     updateDestinationMarker(dest);
   });
 
+  // Subscribe to calculated route changes
+  unsubscribeRoute = routingService.onRoute((route) => {
+    updateRouteDisplay(route);
+  });
+
   // Subscribe to live 50 Hz Fused EKF updates
   unsubscribeFusion = fusionService.subscribe(updateMapState);
+}
+
+function updateRouteDisplay(route: Route | null): void {
+  const banner = document.getElementById('map-nav-banner');
+  const navIcon = document.getElementById('map-nav-icon');
+  const navInstruction = document.getElementById('map-nav-instruction');
+  const navMeta = document.getElementById('map-nav-meta');
+
+  if (!route || route.geometry.length === 0) {
+    if (routePolyline) routePolyline.setLatLngs([]);
+    if (routeCasingPolyline) routeCasingPolyline.setLatLngs([]);
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  // Convert geometry points to LatLng array
+  const latLngs = route.geometry.map((pt) =>
+    L.latLng(pt.coordinate.latitude, pt.coordinate.longitude)
+  );
+
+  if (routeCasingPolyline) routeCasingPolyline.setLatLngs(latLngs);
+  if (routePolyline) routePolyline.setLatLngs(latLngs);
+
+  // Hide straight direct dashed line when full road route is drawn
+  if (destinationLine) destinationLine.setLatLngs([]);
+
+  // Auto-fit map camera to route bounds
+  if (map && latLngs.length > 0) {
+    const bounds = L.latLngBounds(latLngs);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    isFollowing = false;
+    updateFollowBtn();
+  }
+
+  // Show Navigation Turn Guidance Banner
+  if (banner && navInstruction && navMeta && navIcon) {
+    banner.style.display = 'flex';
+    const firstTurn = route.instructions.length > 1 ? route.instructions[1] : route.instructions[0];
+    if (firstTurn) {
+      navIcon.textContent = MANEUVER_ICONS[firstTurn.maneuver] || '➡️';
+      navInstruction.textContent = firstTurn.description;
+    }
+    const distKm = (route.distance / 1000).toFixed(1);
+    const mins = Math.round(route.estimatedTime / 60);
+    navMeta.textContent = `${distKm} km • ~${mins} min (${route.profile.toUpperCase()})`;
+  }
 }
 
 function populatePoiMarkers(): void {
@@ -276,12 +369,14 @@ function populatePoiMarkers(): void {
         const setDestBtn = document.getElementById(`btn-popup-dest-${poi.id}`);
         const routeBtn = document.getElementById(`btn-popup-route-${poi.id}`);
 
-        setDestBtn?.addEventListener('click', () => {
+        setDestBtn?.addEventListener('click', async () => {
           poiService.setDestination(poi);
           marker.closePopup();
+          // Auto-calculate route
+          await routingService.calculateRoute();
         });
 
-        routeBtn?.addEventListener('click', () => {
+        routeBtn?.addEventListener('click', async () => {
           poiService.setDestination(poi);
           window.location.hash = '#/route';
         });
@@ -325,8 +420,9 @@ function updateDestinationMarker(dest: POI | null): void {
     className: 'poi-destination-tooltip',
   });
 
-  // Update line from vehicle to destination
-  if (vehicleMarker && destinationLine) {
+  // Update line from vehicle to destination only if road route isn't rendered
+  const currentRoute = routingService.getCurrentRoute();
+  if (vehicleMarker && destinationLine && (!currentRoute || currentRoute.geometry.length === 0)) {
     destinationLine.setLatLngs([vehicleMarker.getLatLng(), destLatLng]);
   }
 }
@@ -394,7 +490,7 @@ function updateMapState(estimate: FusedPositionEstimate): void {
 
   // First time camera center
   if (!isInitialized) {
-    map.setView(latLng, 15);
+    map.setView(latLng, 14);
     isInitialized = true;
     lastPanTime = Date.now();
   } else if (isFollowing) {
@@ -413,9 +509,10 @@ function updateMapState(estimate: FusedPositionEstimate): void {
   }
   pathLine?.setLatLngs(pathCoordinates);
 
-  // Update direct line to destination if active
+  // Update direct line to destination if active and no road route is computed
   const curDest = poiService.getSelectedDestination();
-  if (curDest && destinationLine) {
+  const currentRoute = routingService.getCurrentRoute();
+  if (curDest && destinationLine && (!currentRoute || currentRoute.geometry.length === 0)) {
     destinationLine.setLatLngs([latLng, L.latLng(curDest.latitude, curDest.longitude)]);
   }
 }

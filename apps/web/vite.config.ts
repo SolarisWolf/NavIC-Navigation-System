@@ -72,6 +72,9 @@ export default defineConfig({
       // Nothing needed here, process exit will clean up read-only sqlite
     }
   }],
+  optimizeDeps: {
+    exclude: ['better-sqlite3'],
+  },
   server: {
     port: 3000,
     host: '0.0.0.0',
