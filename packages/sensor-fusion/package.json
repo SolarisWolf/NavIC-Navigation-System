@@ -7,13 +7,15 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc --build",
-    "clean": "rimraf dist *.tsbuildinfo"
+    "clean": "rimraf dist *.tsbuildinfo",
+    "test": "vitest run"
   },
   "dependencies": {
     "@navic/shared-models": "*",
     "@navic/gnss-core": "*"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
   }
 }

@@ -6,6 +6,7 @@
  */
 
 import { gnssService } from '../services/gnss-service.js';
+import { imuService } from '../services/imu-service.js';
 
 export class SimulationControls {
   private container: HTMLElement;
@@ -100,19 +101,23 @@ export class SimulationControls {
     this.panel.querySelector('#sim-play')?.addEventListener('click', () => {
       if (sim.getIsPaused()) {
         sim.resume();
+        imuService.start(50);
       } else {
         gnssService.start();
+        imuService.start(50);
       }
     });
 
     // Pause
     this.panel.querySelector('#sim-pause')?.addEventListener('click', () => {
       sim.pause();
+      imuService.stop();
     });
 
     // Reset
     this.panel.querySelector('#sim-reset')?.addEventListener('click', () => {
       sim.reset();
+      imuService.stop();
     });
 
     // Speed buttons
