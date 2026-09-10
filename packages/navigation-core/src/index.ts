@@ -52,6 +52,15 @@ export {
   type OffRouteStatus,
 } from './matching/off-route-detector';
 
+// Re-routing Engine
+export {
+  ReroutingManager,
+  type RerouteOptions,
+  type RerouteStartedListener,
+  type RerouteSuccessListener,
+  type RerouteFailedListener,
+} from './rerouting/rerouting-manager';
+
 // Re-export navigation-related types for convenience
 export type {
   NavigationState,

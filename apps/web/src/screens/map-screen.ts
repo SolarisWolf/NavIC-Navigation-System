@@ -150,6 +150,12 @@ export function renderMapScreen(container: HTMLElement): void {
       <div class="map-container" id="map-view">
         <!-- Floating Navigation Turn Guidance Banner -->
         <div class="map-nav-banner" id="map-nav-banner" style="display: none;">
+          <!-- Re-routing Banner Strip -->
+          <div class="map-nav-reroute-banner" id="map-nav-reroute" style="display: none;">
+            <span class="reroute-spinner">🔄</span>
+            <span>RE-ROUTING — Recalculating road path...</span>
+          </div>
+
           <!-- Off-Route Alert Strip -->
           <div class="map-nav-offroute-banner" id="map-nav-offroute" style="display: none;">
             <span>⚠️</span>
@@ -219,6 +225,7 @@ export function renderMapScreen(container: HTMLElement): void {
         <button class="map-btn" id="btn-recenter" title="Recenter">⌖</button>
         <button class="map-btn map-btn--active" id="btn-toggle-pois" title="Toggle POIs">📍</button>
         <button class="map-btn" id="btn-outage" title="Simulate GNSS Outage (Test Dead Reckoning)">🚇 Outage</button>
+        <button class="map-btn" id="btn-manual-reroute" title="Recalculate Route" style="display: none;">🔄 Re-route</button>
       </div>
     </div>
   `;
@@ -338,6 +345,13 @@ export function renderMapScreen(container: HTMLElement): void {
     navigationService.stopNavigation();
   });
 
+  const btnManualReroute = document.getElementById('btn-manual-reroute');
+  btnManualReroute?.addEventListener('click', async () => {
+    btnManualReroute.classList.add('map-btn--active');
+    await navigationService.triggerReroute(true);
+    btnManualReroute.classList.remove('map-btn--active');
+  });
+
   btnCloseNav?.addEventListener('click', () => {
     if (navigationService.isNavigating) {
       navigationService.stopNavigation();
@@ -370,6 +384,7 @@ export function renderMapScreen(container: HTMLElement): void {
 
 function updateNavigationUI(state: NavigationState): void {
   const banner = document.getElementById('map-nav-banner');
+  const rerouteStrip = document.getElementById('map-nav-reroute');
   const offRouteStrip = document.getElementById('map-nav-offroute');
   const arrivalStrip = document.getElementById('map-nav-arrival');
   const navIcon = document.getElementById('map-nav-icon');
@@ -380,18 +395,40 @@ function updateNavigationUI(state: NavigationState): void {
   const startNavBtn = document.getElementById('btn-start-nav-map');
   const progressFill = document.getElementById('map-nav-progress-fill');
   const tripBar = document.getElementById('map-trip-bar');
+  const btnManualReroute = document.getElementById('btn-manual-reroute');
 
   if (!state.route) {
     if (banner) banner.style.display = 'none';
     if (tripBar) tripBar.style.display = 'none';
+    if (btnManualReroute) btnManualReroute.style.display = 'none';
     return;
   }
 
   if (banner) banner.style.display = 'flex';
 
-  if (state.mode === NavigationMode.Active) {
+  if (state.mode === NavigationMode.Rerouting) {
+    if (rerouteStrip) rerouteStrip.style.display = 'flex';
+    if (offRouteStrip) offRouteStrip.style.display = 'none';
+    if (arrivalStrip) arrivalStrip.style.display = 'none';
     if (startNavBtn) startNavBtn.style.display = 'none';
     if (tripBar) tripBar.style.display = 'flex';
+    if (btnManualReroute) btnManualReroute.style.display = 'inline-flex';
+
+    if (navIcon) {
+      navIcon.textContent = '🔄';
+      navIcon.classList.add('map-nav-icon--immediate');
+    }
+    if (countdownVal && countdownUnit) {
+      countdownVal.textContent = 'REROUTE';
+      countdownUnit.textContent = '';
+    }
+    if (navInstruction) navInstruction.textContent = 'Recalculating optimal road route...';
+    if (navNextStep) navNextStep.textContent = 'Updating road trajectory via offline network';
+  } else if (state.mode === NavigationMode.Active) {
+    if (rerouteStrip) rerouteStrip.style.display = 'none';
+    if (startNavBtn) startNavBtn.style.display = 'none';
+    if (tripBar) tripBar.style.display = 'flex';
+    if (btnManualReroute) btnManualReroute.style.display = 'inline-flex';
 
     // Off-route status
     if (offRouteStrip) {

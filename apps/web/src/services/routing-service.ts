@@ -101,6 +101,11 @@ class RoutingServiceImpl {
     }
   }
 
+  public setCurrentRoute(route: Route): void {
+    this.currentRoute = route;
+    this.notifyListeners(route);
+  }
+
   public clearRoute(): void {
     this.currentRoute = null;
     this.notifyListeners(null);

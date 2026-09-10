@@ -106,6 +106,55 @@ export class NavigationEngine {
   }
 
   /**
+   * Explicitly sets navigation mode (e.g. NavigationMode.Rerouting).
+   */
+  public setMode(mode: NavigationMode): NavigationState {
+    this.currentState = {
+      ...this.currentState,
+      mode,
+    };
+    this.notifyState();
+    return this.currentState;
+  }
+
+  /**
+   * Hot-swaps the active route with a freshly recalculated route
+   * seamlessly without stopping active guidance.
+   */
+  public reroute(newRoute: Route): NavigationState {
+    this.activeRoute = newRoute;
+    this.lastMatchedSegment = 0;
+    this.lastManeuverId = null;
+
+    this.progressTracker.reset();
+    this.guidanceEngine.reset();
+    this.offRouteDetector.reset();
+
+    const firstInstruction = newRoute.instructions[0] ?? null;
+
+    this.currentState = {
+      ...this.currentState,
+      mode: NavigationMode.Active,
+      route: newRoute,
+      currentRoadName: firstInstruction?.roadName ?? null,
+      nextInstruction: firstInstruction,
+      distanceToNextManeuver: firstInstruction?.distanceToNext ?? 0,
+      remainingDistance: newRoute.distance,
+      eta: Date.now() + newRoute.estimatedTime * 1000,
+      remainingTime: newRoute.estimatedTime,
+      isOffRoute: false,
+      progress: 0,
+    };
+
+    this.logger.info(
+      `Route hot-swapped: ${newRoute.instructions.length} steps, ${(newRoute.distance / 1000).toFixed(2)} km, ETA: ${Math.round(newRoute.estimatedTime / 60)} min`
+    );
+
+    this.notifyState();
+    return this.currentState;
+  }
+
+  /**
    * Stops active navigation and resets state to Idle.
    */
   public stopNavigation(): NavigationState {
