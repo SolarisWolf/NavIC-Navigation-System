@@ -9,10 +9,21 @@
  */
 
 import L from 'leaflet';
-import { type FusedPositionEstimate, SensorFusionMode, type POI, type Route, ManeuverType } from '@navic/shared-models';
+import {
+  type FusedPositionEstimate,
+  SensorFusionMode,
+  type POI,
+  type Route,
+  ManeuverType,
+  NavigationMode,
+  type NavigationState,
+  formatDistance,
+  formatDuration,
+} from '@navic/shared-models';
 import { fusionService } from '../services/fusion-service.js';
 import { poiService } from '../services/poi-service.js';
 import { routingService } from '../services/routing-service.js';
+import { navigationService } from '../services/navigation-service.js';
 import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
 
 let map: L.Map | null = null;
@@ -28,6 +39,7 @@ let showPois = true;
 let unsubscribeFusion: (() => void) | null = null;
 let unsubscribeDest: (() => void) | null = null;
 let unsubscribeRoute: (() => void) | null = null;
+let unsubscribeNav: (() => void) | null = null;
 
 let isFollowing = true;
 let isInitialized = false;
@@ -99,6 +111,10 @@ export function renderMapScreen(container: HTMLElement): void {
     unsubscribeRoute();
     unsubscribeRoute = null;
   }
+  if (unsubscribeNav) {
+    unsubscribeNav();
+    unsubscribeNav = null;
+  }
   if (map) {
     map.remove();
     map = null;
@@ -134,12 +150,67 @@ export function renderMapScreen(container: HTMLElement): void {
       <div class="map-container" id="map-view">
         <!-- Floating Navigation Turn Guidance Banner -->
         <div class="map-nav-banner" id="map-nav-banner" style="display: none;">
-          <div class="map-nav-icon" id="map-nav-icon">🧭</div>
-          <div class="map-nav-info">
-            <div class="map-nav-instruction" id="map-nav-instruction">Starting Navigation...</div>
-            <div class="map-nav-meta" id="map-nav-meta">-- km • -- min</div>
+          <!-- Off-Route Alert Strip -->
+          <div class="map-nav-offroute-banner" id="map-nav-offroute" style="display: none;">
+            <span>⚠️</span>
+            <span>OFF ROUTE — Please return to route</span>
           </div>
-          <button class="map-nav-close" id="btn-close-nav" title="Clear Route">✕</button>
+
+          <!-- Arrival Banner -->
+          <div class="map-nav-arrival-banner" id="map-nav-arrival" style="display: none;">
+            <span>🎉</span>
+            <span>ARRIVED AT DESTINATION! 🏁</span>
+          </div>
+
+          <!-- Main Banner Content -->
+          <div class="map-nav-banner__content">
+            <div class="map-nav-icon" id="map-nav-icon">🧭</div>
+            <div class="map-nav-info">
+              <div class="map-nav-countdown" id="map-nav-countdown">
+                <span id="countdown-val">--</span>
+                <span class="map-nav-countdown__unit" id="countdown-unit"></span>
+              </div>
+              <div class="map-nav-instruction" id="map-nav-instruction">Starting Navigation...</div>
+              <div class="map-nav-next-step" id="map-nav-next-step">-- km • -- min</div>
+            </div>
+            <div class="map-nav-actions">
+              <button class="btn btn--primary btn--sm" id="btn-start-nav-map" style="display: none;">
+                🚀 Start
+              </button>
+              <button class="map-nav-close" id="btn-close-nav" title="Clear / Stop Navigation">✕</button>
+            </div>
+          </div>
+
+          <!-- Route Progress Track -->
+          <div class="map-nav-progress-track">
+            <div class="map-nav-progress-fill" id="map-nav-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Bottom Trip Statistics Bar -->
+        <div class="map-trip-bar" id="map-trip-bar" style="display: none;">
+          <div class="trip-metric">
+            <span class="trip-metric__val" id="trip-remaining-dist">-- km</span>
+            <span class="trip-metric__lbl">Remaining</span>
+          </div>
+          <div class="trip-divider"></div>
+          <div class="trip-metric">
+            <span class="trip-metric__val" id="trip-remaining-time">-- min</span>
+            <span class="trip-metric__lbl">Duration</span>
+          </div>
+          <div class="trip-divider"></div>
+          <div class="trip-metric">
+            <span class="trip-metric__val" id="trip-eta">--:--</span>
+            <span class="trip-metric__lbl">ETA</span>
+          </div>
+          <div class="trip-divider"></div>
+          <div class="trip-metric">
+            <span class="trip-metric__val" id="trip-speed">0 km/h</span>
+            <span class="trip-metric__lbl">Speed</span>
+          </div>
+          <button class="btn-stop-nav" id="btn-stop-nav-trip">
+            ⏹️ Stop
+          </button>
         </div>
       </div>
 
@@ -250,7 +321,27 @@ export function renderMapScreen(container: HTMLElement): void {
     fusionService.triggerGNSSOutage(5000); // 5s GNSS outage
   });
 
+  const btnStartNavMap = document.getElementById('btn-start-nav-map');
+  const btnStopNavTrip = document.getElementById('btn-stop-nav-trip');
+
+  btnStartNavMap?.addEventListener('click', () => {
+    const route = routingService.getCurrentRoute();
+    if (route) {
+      navigationService.startNavigation(route);
+      isFollowing = true;
+      updateFollowBtn();
+      if (vehicleMarker) map?.panTo(vehicleMarker.getLatLng());
+    }
+  });
+
+  btnStopNavTrip?.addEventListener('click', () => {
+    navigationService.stopNavigation();
+  });
+
   btnCloseNav?.addEventListener('click', () => {
+    if (navigationService.isNavigating) {
+      navigationService.stopNavigation();
+    }
     routingService.clearRoute();
   });
 
@@ -268,20 +359,147 @@ export function renderMapScreen(container: HTMLElement): void {
     updateRouteDisplay(route);
   });
 
+  // Subscribe to active navigation guidance updates
+  unsubscribeNav = navigationService.onStateChange((state) => {
+    updateNavigationUI(state);
+  });
+
   // Subscribe to live 50 Hz Fused EKF updates
   unsubscribeFusion = fusionService.subscribe(updateMapState);
 }
 
-function updateRouteDisplay(route: Route | null): void {
+function updateNavigationUI(state: NavigationState): void {
   const banner = document.getElementById('map-nav-banner');
+  const offRouteStrip = document.getElementById('map-nav-offroute');
+  const arrivalStrip = document.getElementById('map-nav-arrival');
   const navIcon = document.getElementById('map-nav-icon');
+  const countdownVal = document.getElementById('countdown-val');
+  const countdownUnit = document.getElementById('countdown-unit');
   const navInstruction = document.getElementById('map-nav-instruction');
-  const navMeta = document.getElementById('map-nav-meta');
+  const navNextStep = document.getElementById('map-nav-next-step');
+  const startNavBtn = document.getElementById('btn-start-nav-map');
+  const progressFill = document.getElementById('map-nav-progress-fill');
+  const tripBar = document.getElementById('map-trip-bar');
 
+  if (!state.route) {
+    if (banner) banner.style.display = 'none';
+    if (tripBar) tripBar.style.display = 'none';
+    return;
+  }
+
+  if (banner) banner.style.display = 'flex';
+
+  if (state.mode === NavigationMode.Active) {
+    if (startNavBtn) startNavBtn.style.display = 'none';
+    if (tripBar) tripBar.style.display = 'flex';
+
+    // Off-route status
+    if (offRouteStrip) {
+      offRouteStrip.style.display = state.isOffRoute ? 'flex' : 'none';
+    }
+    if (arrivalStrip) {
+      arrivalStrip.style.display = 'none';
+    }
+
+    // Maneuver icon & proximity pulsing
+    if (navIcon && state.nextInstruction) {
+      navIcon.textContent = MANEUVER_ICONS[state.nextInstruction.maneuver] || '➡️';
+      const isImmediate = state.distanceToNextManeuver !== null && state.distanceToNextManeuver <= 50;
+      if (isImmediate) {
+        navIcon.classList.add('map-nav-icon--immediate');
+      } else {
+        navIcon.classList.remove('map-nav-icon--immediate');
+      }
+    }
+
+    // Countdown distance
+    if (countdownVal && countdownUnit) {
+      if (state.distanceToNextManeuver !== null) {
+        if (state.distanceToNextManeuver <= 25) {
+          countdownVal.textContent = 'NOW';
+          countdownUnit.textContent = '';
+        } else if (state.distanceToNextManeuver < 1000) {
+          countdownVal.textContent = `${Math.round(state.distanceToNextManeuver)}`;
+          countdownUnit.textContent = 'm';
+        } else {
+          countdownVal.textContent = `${(state.distanceToNextManeuver / 1000).toFixed(1)}`;
+          countdownUnit.textContent = 'km';
+        }
+      } else {
+        countdownVal.textContent = '--';
+        countdownUnit.textContent = '';
+      }
+    }
+
+    // Instruction description
+    if (navInstruction && state.nextInstruction) {
+      navInstruction.textContent = state.nextInstruction.description;
+    }
+
+    // Next step / road name
+    if (navNextStep) {
+      if (state.currentRoadName) {
+        navNextStep.textContent = `On: ${state.currentRoadName}`;
+      } else {
+        navNextStep.textContent = `Follow route to destination`;
+      }
+    }
+
+    // Progress bar fill
+    if (progressFill) {
+      progressFill.style.width = `${Math.round((state.progress || 0) * 100)}%`;
+    }
+
+    // Bottom Trip Bar metrics
+    const tripDist = document.getElementById('trip-remaining-dist');
+    const tripTime = document.getElementById('trip-remaining-time');
+    const tripEta = document.getElementById('trip-eta');
+    const tripSpeed = document.getElementById('trip-speed');
+
+    if (tripDist) tripDist.textContent = formatDistance(state.remainingDistance ?? 0);
+    if (tripTime) tripTime.textContent = formatDuration(state.remainingTime ?? 0);
+    if (tripEta && state.eta) {
+      tripEta.textContent = new Date(state.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (tripSpeed) {
+      tripSpeed.textContent = `${Math.round((state.currentSpeed || 0) * 3.6)} km/h`;
+    }
+  } else if (state.mode === NavigationMode.Arrived) {
+    if (arrivalStrip) arrivalStrip.style.display = 'flex';
+    if (offRouteStrip) offRouteStrip.style.display = 'none';
+    if (countdownVal) countdownVal.textContent = 'ARRIVED';
+    if (countdownUnit) countdownUnit.textContent = '';
+    if (navInstruction) navInstruction.textContent = 'You have reached your destination';
+    if (navNextStep) navNextStep.textContent = 'Trip Completed';
+    if (progressFill) progressFill.style.width = '100%';
+    if (tripBar) tripBar.style.display = 'flex';
+    if (startNavBtn) startNavBtn.style.display = 'none';
+  } else {
+    // Idle mode with calculated route: show route preview
+    if (offRouteStrip) offRouteStrip.style.display = 'none';
+    if (arrivalStrip) arrivalStrip.style.display = 'none';
+    if (startNavBtn) startNavBtn.style.display = 'block';
+    if (tripBar) tripBar.style.display = 'none';
+    if (navIcon) navIcon.textContent = '🧭';
+    if (countdownVal) countdownVal.textContent = `${(state.route.distance / 1000).toFixed(1)}`;
+    if (countdownUnit) countdownUnit.textContent = 'km';
+    if (navInstruction) {
+      const firstTurn = state.route.instructions.length > 1 ? state.route.instructions[1] : state.route.instructions[0];
+      navInstruction.textContent = firstTurn ? firstTurn.description : 'Route Calculated';
+    }
+    if (navNextStep) {
+      const mins = Math.round(state.route.estimatedTime / 60);
+      navNextStep.textContent = `~${mins} min (${state.route.profile.toUpperCase()}) • Ready to navigate`;
+    }
+    if (progressFill) progressFill.style.width = '0%';
+  }
+}
+
+function updateRouteDisplay(route: Route | null): void {
   if (!route || route.geometry.length === 0) {
     if (routePolyline) routePolyline.setLatLngs([]);
     if (routeCasingPolyline) routeCasingPolyline.setLatLngs([]);
-    if (banner) banner.style.display = 'none';
+    updateNavigationUI(navigationService.getState());
     return;
   }
 
@@ -296,26 +514,16 @@ function updateRouteDisplay(route: Route | null): void {
   // Hide straight direct dashed line when full road route is drawn
   if (destinationLine) destinationLine.setLatLngs([]);
 
-  // Auto-fit map camera to route bounds
-  if (map && latLngs.length > 0) {
+  // Auto-fit map camera to route bounds only if not already navigating
+  if (map && latLngs.length > 0 && !navigationService.isNavigating) {
     const bounds = L.latLngBounds(latLngs);
     map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
     isFollowing = false;
     updateFollowBtn();
   }
 
-  // Show Navigation Turn Guidance Banner
-  if (banner && navInstruction && navMeta && navIcon) {
-    banner.style.display = 'flex';
-    const firstTurn = route.instructions.length > 1 ? route.instructions[1] : route.instructions[0];
-    if (firstTurn) {
-      navIcon.textContent = MANEUVER_ICONS[firstTurn.maneuver] || '➡️';
-      navInstruction.textContent = firstTurn.description;
-    }
-    const distKm = (route.distance / 1000).toFixed(1);
-    const mins = Math.round(route.estimatedTime / 60);
-    navMeta.textContent = `${distKm} km • ~${mins} min (${route.profile.toUpperCase()})`;
-  }
+  // Update UI with current navigation state
+  updateNavigationUI(navigationService.getState());
 }
 
 function populatePoiMarkers(): void {
@@ -464,7 +672,19 @@ function updateMapState(estimate: FusedPositionEstimate): void {
   const { latitude, longitude } = estimate.coordinate;
   if (latitude === 0 || longitude === 0) return;
 
-  const latLng = L.latLng(latitude, longitude);
+  let displayLat = latitude;
+  let displayLon = longitude;
+
+  // If navigating and snapped to route without being off-route, display snapped coordinate
+  if (navigationService.isNavigating) {
+    const navState = navigationService.getState();
+    if (!navState.isOffRoute && navState.matchedPosition) {
+      displayLat = navState.matchedPosition.latitude;
+      displayLon = navState.matchedPosition.longitude;
+    }
+  }
+
+  const latLng = L.latLng(displayLat, displayLon);
 
   // Initialize or update marker
   if (!vehicleMarker) {

@@ -111,6 +111,13 @@ class FusionServiceImpl {
   }
 
   /**
+   * Alias for subscribe for readability.
+   */
+  public onEstimate(listener: FusedPositionCallback): () => void {
+    return this.subscribe(listener);
+  }
+
+  /**
    * Subscribe to EKF diagnostic updates. Returns an unsubscribe function.
    */
   public subscribeStatus(listener: SensorFusionStatusCallback): () => void {

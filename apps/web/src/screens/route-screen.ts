@@ -17,6 +17,7 @@ import {
 } from '@navic/shared-models';
 import { poiService } from '../services/poi-service.js';
 import { routingService } from '../services/routing-service.js';
+import { navigationService } from '../services/navigation-service.js';
 
 export const CATEGORY_ICONS: Record<string, string> = {
   [POICategory.Hospital]: '🏥',
@@ -415,8 +416,17 @@ export function renderRouteScreen(container: HTMLElement): void {
   }
 
   function attachSummaryListeners(): void {
-    const navMapBtn = container.querySelector('#btn-start-nav');
-    navMapBtn?.addEventListener('click', () => {
+    const previewMapBtn = container.querySelector('#btn-view-map-preview') || container.querySelector('#btn-start-nav');
+    previewMapBtn?.addEventListener('click', () => {
+      window.location.hash = '#/map';
+    });
+
+    const startNavBtn = container.querySelector('#btn-start-nav-active');
+    startNavBtn?.addEventListener('click', () => {
+      const route = routingService.getCurrentRoute();
+      if (route) {
+        navigationService.startNavigation(route);
+      }
       window.location.hash = '#/map';
     });
   }
@@ -576,9 +586,14 @@ function renderRouteSummary(
           ${distKm} km • ${durationStr} • ${turnCount} steps (${profile.toUpperCase()} • ${opt.toUpperCase()})
         </div>
       </div>
-      <button class="btn btn--primary btn--sm" id="btn-start-nav">
-        🗺️ View on Map
-      </button>
+      <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+        <button class="btn btn--secondary btn--sm" id="btn-view-map-preview">
+          🗺️ View Map
+        </button>
+        <button class="btn btn--primary btn--sm" id="btn-start-nav-active">
+          🚀 Start Navigation
+        </button>
+      </div>
     </div>
 
     <!-- Quick Stats Grid -->
