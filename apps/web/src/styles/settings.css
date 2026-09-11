@@ -194,3 +194,33 @@
   font-style: italic;
 }
 
+@media (max-width: 768px) {
+  .settings-screen {
+    padding: 10px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .settings-group__header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .settings-row,
+  .settings-interactive-row {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .settings-interactive-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .settings-slider {
+    width: 120px;
+  }
+
+  .settings-select {
+    max-width: 160px;
+  }
+}
+
+

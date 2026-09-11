@@ -23,10 +23,20 @@ import {
 
 import { ExtendedKalmanFilter } from './ekf/extended-kalman-filter.js';
 import { wgs84ToEnu, enuToWgs84 } from './math/coordinates.js';
+import { rotationMatrixFromRotationVector, type Float64Matrix } from './math/matrix.js';
+
+export interface DeviceRotationVector {
+  x: number;
+  y: number;
+  z: number;
+  w?: number;
+}
 
 export class SensorFusionEngine {
   private ekf: ExtendedKalmanFilter;
   private logger = new Logger('SensorFusionEngine');
+  private deviceRotationMatrix: Float64Matrix | null = null;
+
 
   // Anchor coordinate for local ENU frame
   private anchor: Coordinate | null = null;
@@ -148,16 +158,34 @@ export class SensorFusionEngine {
   }
 
   /**
+   * Sets the device orientation rotation matrix from an Android rotation vector quaternion.
+   */
+  public setDeviceOrientation(x: number, y: number, z: number, w?: number): void {
+    this.deviceRotationMatrix = rotationMatrixFromRotationVector(x, y, z, w);
+  }
+
+  /**
    * Ingests IMU readings (typically 50 Hz).
    * Runs the EKF prediction step and emits a high-rate fused estimate.
+   * Supports device-to-world rotation transforms when rotationVector or setDeviceOrientation is provided.
    */
   public processIMU(
     accel: AccelerometerReading,
     gyro: GyroscopeReading,
-    _mag?: MagnetometerReading
+    _mag?: MagnetometerReading,
+    rotationVector?: DeviceRotationVector
   ): void {
     this.lastAccel = accel;
     this.lastGyro = gyro;
+
+    if (rotationVector) {
+      this.deviceRotationMatrix = rotationMatrixFromRotationVector(
+        rotationVector.x,
+        rotationVector.y,
+        rotationVector.z,
+        rotationVector.w
+      );
+    }
 
     const now = accel.timestamp || Date.now();
     const dt = this.lastImuTimestamp ? (now - this.lastImuTimestamp) / 1000.0 : 0.02;
@@ -176,10 +204,34 @@ export class SensorFusionEngine {
 
     if (!this.ekf.initialized) return;
 
-    // Forward acceleration (Y axis in our IMU convention)
-    const forwardAccel = accel.acceleration.y;
-    // Yaw rate around vertical axis (Z axis in rad/s)
-    const yawRate = gyro.angularVelocity.z;
+    let forwardAccel: number;
+    let yawRate: number;
+
+    if (this.deviceRotationMatrix) {
+      const R = this.deviceRotationMatrix;
+      const ax = accel.acceleration.x;
+      const ay = accel.acceleration.y;
+      const az = accel.acceleration.z;
+
+      // Transform acceleration to world ENU frame: a_world = R * a_device
+      const aEast = R.get(0, 0) * ax + R.get(0, 1) * ay + R.get(0, 2) * az;
+      const aNorth = R.get(1, 0) * ax + R.get(1, 1) * ay + R.get(1, 2) * az;
+
+      // Transform angular velocity to world frame: yaw rate around vertical Up axis
+      const gx = gyro.angularVelocity.x;
+      const gy = gyro.angularVelocity.y;
+      const gz = gyro.angularVelocity.z;
+      yawRate = R.get(2, 0) * gx + R.get(2, 1) * gy + R.get(2, 2) * gz;
+
+      // Project horizontal acceleration along vehicle heading:
+      // In EKF, heading 0 = North, pi/2 = East
+      const heading = this.ekf.getState().bearingRad;
+      forwardAccel = aEast * Math.sin(heading) + aNorth * Math.cos(heading);
+    } else {
+      // Baseline convention (device Y axis is forward, Z axis is yaw)
+      forwardAccel = accel.acceleration.y;
+      yawRate = gyro.angularVelocity.z;
+    }
 
     // Predict step in EKF
     this.ekf.predict(dt, forwardAccel, yawRate);
@@ -261,7 +313,7 @@ export class SensorFusionEngine {
       try {
         cb(estimate);
       } catch (e) {
-        console.error('Fused position listener error:', e);
+        this.logger.error('Fused position listener error:', e);
       }
     }
 
@@ -270,8 +322,9 @@ export class SensorFusionEngine {
       try {
         cb(status);
       } catch (e) {
-        console.error('Fusion status listener error:', e);
+        this.logger.error('Fusion status listener error:', e);
       }
     }
   }
 }
+

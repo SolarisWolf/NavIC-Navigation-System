@@ -4,7 +4,7 @@
  * Computes HDOP, VDOP, PDOP, and GDOP from satellite line-of-sight geometry vectors.
  */
 
-import { DilutionOfPrecision, SatelliteInfo } from '@navic/shared-models';
+import { DilutionOfPrecision, SatelliteInfo, invert4x4 } from '@navic/shared-models';
 
 /**
  * Computes DOP metrics from satellites used in the current navigation fix.
@@ -88,63 +88,3 @@ export function calculateDOP(satellites: readonly SatelliteInfo[]): DilutionOfPr
   };
 }
 
-/**
- * 4x4 Matrix Inversion with Partial Pivoting
- */
-function invert4x4(M: number[][]): number[][] | null {
-  const aug: number[][] = new Array(4);
-  for (let i = 0; i < 4; i++) {
-    aug[i] = [
-      M[i][0], M[i][1], M[i][2], M[i][3],
-      i === 0 ? 1 : 0,
-      i === 1 ? 1 : 0,
-      i === 2 ? 1 : 0,
-      i === 3 ? 1 : 0,
-    ];
-  }
-
-  for (let col = 0; col < 4; col++) {
-    // Find pivot
-    let maxVal = Math.abs(aug[col][col]);
-    let maxRow = col;
-    for (let r = col + 1; r < 4; r++) {
-      const val = Math.abs(aug[r][col]);
-      if (val > maxVal) {
-        maxVal = val;
-        maxRow = r;
-      }
-    }
-
-    if (maxVal < 1e-9) {
-      aug[col][col] += 1e-4; // Regularize near-singular geometry
-    }
-
-    if (maxRow !== col) {
-      const tmp = aug[col];
-      aug[col] = aug[maxRow];
-      aug[maxRow] = tmp;
-    }
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) return null;
-
-    for (let j = 0; j < 8; j++) {
-      aug[col][j] /= pivot;
-    }
-
-    for (let r = 0; r < 4; r++) {
-      if (r === col) continue;
-      const factor = aug[r][col];
-      if (factor === 0) continue;
-      for (let j = 0; j < 8; j++) {
-        aug[r][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  const res: number[][] = new Array(4);
-  for (let i = 0; i < 4; i++) {
-    res[i] = [aug[i][4], aug[i][5], aug[i][6], aug[i][7]];
-  }
-  return res;
-}

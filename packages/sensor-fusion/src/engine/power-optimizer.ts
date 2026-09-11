@@ -40,13 +40,13 @@ export class PowerOptimizer {
   private currentSpeedMs = 0;
 
   private battery: BatteryTelemetry = {
-    levelPercent: 85,
+    levelPercent: -1,
     isCharging: false,
     chargingSource: 'UNKNOWN',
-    temperatureCelsius: 31.5,
-    voltageMv: 3950,
-    health: 'GOOD',
-    estimatedHoursRemaining: 5.6,
+    temperatureCelsius: 0,
+    voltageMv: 0,
+    health: undefined,
+    estimatedHoursRemaining: 0,
   };
 
   private listeners: Set<PowerStatusListener> = new Set();
@@ -120,6 +120,28 @@ export class PowerOptimizer {
     }
 
     this.notifyListeners();
+  }
+
+  /**
+   * Starts periodic battery polling with given provider function.
+   * Returns an un-subscriber to cancel polling.
+   */
+  public startBatteryPolling(
+    pollFn: () => Partial<BatteryTelemetry> | null | Promise<Partial<BatteryTelemetry> | null>,
+    intervalMs = 30000
+  ): () => void {
+    const timer = setInterval(async () => {
+      try {
+        const res = await pollFn();
+        if (res) {
+          this.updateBattery(res);
+        }
+      } catch (e) {
+        this.logger.warn('Error polling battery telemetry:', e);
+      }
+    }, intervalMs);
+
+    return () => clearInterval(timer);
   }
 
   /**
@@ -220,6 +242,9 @@ export class PowerOptimizer {
   }
 
   private evaluateBatteryThresholds(): void {
+    if (this.battery.levelPercent < 0) {
+      return; // Battery level unknown yet
+    }
     if (this.battery.levelPercent <= 10 && !this.battery.isCharging) {
       this.profileMode = PowerProfileMode.CRITICAL;
       this.isPowerSaverActive = true;
@@ -241,6 +266,7 @@ export class PowerOptimizer {
   }
 
   private calculateEstimatedHours(level: number, isCharging: boolean, isPowerSaver: boolean): number {
+    if (level < 0) return 0;
     if (isCharging) {
       return 99.0; // Unlimited when connected to power
     }

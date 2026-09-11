@@ -7,11 +7,12 @@
  * coordinate smoothing, and emits high-fidelity GNSSPosition updates.
  */
 
-import { type GNSSPosition, type GNSSPositionCallback } from '@navic/shared-models';
+import { type GNSSPosition, type GNSSPositionCallback, Logger } from '@navic/shared-models';
 import { PositionEngine } from '@navic/gnss-core';
 import { gnssService } from './gnss-service.js';
 
 class PositionServiceImpl {
+  private logger = new Logger('PositionService');
   private engine: PositionEngine;
   private listeners: Set<GNSSPositionCallback> = new Set();
   private _lastPosition: GNSSPosition | null = null;
@@ -32,9 +33,14 @@ class PositionServiceImpl {
         try {
           listener(processed);
         } catch (e) {
-          console.error('Position listener error:', e);
+          this.logger.error('Position listener error:', e);
         }
       }
+    });
+
+    // Reset position engine when switching data sources
+    gnssService.onSourceModeChange(() => {
+      this.reset();
     });
   }
 
@@ -52,6 +58,11 @@ class PositionServiceImpl {
       listener(this._lastPosition);
     }
     return () => this.listeners.delete(listener);
+  }
+
+  public reset(): void {
+    this.engine.reset();
+    this._lastPosition = null;
   }
 }
 

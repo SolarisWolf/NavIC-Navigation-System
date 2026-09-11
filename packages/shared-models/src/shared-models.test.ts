@@ -48,6 +48,10 @@ import {
   generateId,
   formatDistance,
   formatDuration,
+  normalizeAngleRad,
+  normalizeAngleDeg,
+  matrixInverse,
+  invert4x4,
 } from '@navic/shared-models';
 
 // ─── Enum Tests ──────────────────────────────────────────────────────────────
@@ -393,6 +397,63 @@ describe('Utility functions', () => {
 
     it('should format exact hours', () => {
       expect(formatDuration(7200)).toBe('2 hr');
+    });
+  });
+
+  describe('normalizeAngleRad & normalizeAngleDeg', () => {
+    it('should normalize angles in radians to [-pi, pi]', () => {
+      expect(normalizeAngleRad(0)).toBeCloseTo(0);
+      expect(normalizeAngleRad(Math.PI)).toBeCloseTo(Math.PI);
+      expect(normalizeAngleRad(3 * Math.PI)).toBeCloseTo(Math.PI);
+      expect(normalizeAngleRad(-3 * Math.PI)).toBeCloseTo(Math.PI);
+      expect(normalizeAngleRad(Math.PI / 2)).toBeCloseTo(Math.PI / 2);
+      expect(normalizeAngleRad(-Math.PI / 2)).toBeCloseTo(-Math.PI / 2);
+    });
+
+    it('should normalize angles in degrees to [0, 360)', () => {
+      expect(normalizeAngleDeg(0)).toBe(0);
+      expect(normalizeAngleDeg(360)).toBe(0);
+      expect(normalizeAngleDeg(720)).toBe(0);
+      expect(normalizeAngleDeg(-90)).toBe(270);
+      expect(normalizeAngleDeg(450)).toBe(90);
+    });
+  });
+
+  describe('matrixInverse & invert4x4', () => {
+    it('should invert 2x2 identity matrix', () => {
+      const I = [[1, 0], [0, 1]];
+      const inv = matrixInverse(I);
+      expect(inv[0][0]).toBeCloseTo(1);
+      expect(inv[1][1]).toBeCloseTo(1);
+      expect(inv[0][1]).toBeCloseTo(0);
+      expect(inv[1][0]).toBeCloseTo(0);
+    });
+
+    it('should invert a diagonal 4x4 matrix', () => {
+      const diag = [
+        [2, 0, 0, 0],
+        [0, 4, 0, 0],
+        [0, 0, 5, 0],
+        [0, 0, 0, 8],
+      ];
+      const inv = invert4x4(diag);
+      expect(inv[0][0]).toBeCloseTo(0.5);
+      expect(inv[1][1]).toBeCloseTo(0.25);
+      expect(inv[2][2]).toBeCloseTo(0.2);
+      expect(inv[3][3]).toBeCloseTo(0.125);
+    });
+
+    it('should multiply A and A_inv to get identity', () => {
+      const A = [
+        [4, 7],
+        [2, 6],
+      ];
+      const inv = matrixInverse(A);
+      // [4*0.6 + 7*(-0.2) = 2.4 - 1.4 = 1]
+      const r0c0 = A[0][0] * inv[0][0] + A[0][1] * inv[1][0];
+      const r0c1 = A[0][0] * inv[0][1] + A[0][1] * inv[1][1];
+      expect(r0c0).toBeCloseTo(1);
+      expect(r0c1).toBeCloseTo(0);
     });
   });
 });

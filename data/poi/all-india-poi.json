@@ -1,0 +1,1087 @@
+[
+  {
+    "id": "poi-hosp-1",
+    "name": "All India Institute of Medical Sciences (AIIMS)",
+    "category": "Hospital",
+    "latitude": 28.5672,
+    "longitude": 77.21,
+    "address": "Sri Aurobindo Marg, Ansari Nagar, New Delhi",
+    "phone": "+91-11-26588500",
+    "tags": {
+      "emergency": "yes",
+      "beds": "2500",
+      "type": "public"
+    }
+  },
+  {
+    "id": "poi-hosp-2",
+    "name": "Safdarjung Hospital",
+    "category": "Hospital",
+    "latitude": 28.5705,
+    "longitude": 77.2078,
+    "address": "Ring Road, Opposite AIIMS, New Delhi",
+    "phone": "+91-11-26165060",
+    "tags": {
+      "emergency": "yes",
+      "type": "public"
+    }
+  },
+  {
+    "id": "poi-hosp-3",
+    "name": "Max Super Speciality Hospital Saket",
+    "category": "Hospital",
+    "latitude": 28.5273,
+    "longitude": 77.2119,
+    "address": "1, 2, Press Enclave Marg, Saket Institutional Area, New Delhi",
+    "phone": "+91-11-26515050",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-hosp-4",
+    "name": "Indraprastha Apollo Hospital",
+    "category": "Hospital",
+    "latitude": 28.5417,
+    "longitude": 77.2831,
+    "address": "Delhi Mathura Road, Sarita Vihar, New Delhi",
+    "phone": "+91-11-71791090",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-hosp-5",
+    "name": "Sir Ganga Ram Hospital",
+    "category": "Hospital",
+    "latitude": 28.6385,
+    "longitude": 77.1895,
+    "address": "Sir Ganga Ram Hospital Marg, Rajinder Nagar, New Delhi",
+    "phone": "+91-11-25750000",
+    "tags": {
+      "emergency": "yes",
+      "type": "trust"
+    }
+  },
+  {
+    "id": "poi-hosp-6",
+    "name": "Moolchand Medcity",
+    "category": "Hospital",
+    "latitude": 28.5663,
+    "longitude": 77.2346,
+    "address": "Lala Lajpat Rai Marg, Near Defence Colony, New Delhi",
+    "phone": "+91-11-42000000",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-pol-1",
+    "name": "Connaught Place Police Station",
+    "category": "Police",
+    "latitude": 28.6328,
+    "longitude": 77.2195,
+    "address": "Block A, Connaught Place, New Delhi",
+    "phone": "+91-11-23412233",
+    "tags": {
+      "jurisdiction": "New Delhi District"
+    }
+  },
+  {
+    "id": "poi-pol-2",
+    "name": "Parliament Street Police Station",
+    "category": "Police",
+    "latitude": 28.6247,
+    "longitude": 77.2144,
+    "address": "Parliament Street, Near Patel Chowk, New Delhi",
+    "phone": "+91-11-23361100",
+    "tags": {
+      "jurisdiction": "Central Delhi"
+    }
+  },
+  {
+    "id": "poi-pol-3",
+    "name": "Chanakyapuri Police Station",
+    "category": "Police",
+    "latitude": 28.5982,
+    "longitude": 77.1878,
+    "address": "Nyaya Marg, Diplomatic Enclave, Chanakyapuri, New Delhi",
+    "phone": "+91-11-24103100",
+    "tags": {
+      "jurisdiction": "Diplomatic Enclave"
+    }
+  },
+  {
+    "id": "poi-pol-4",
+    "name": "Tilak Marg Police Station",
+    "category": "Police",
+    "latitude": 28.618,
+    "longitude": 77.238,
+    "address": "Tilak Marg, Near Supreme Court, New Delhi",
+    "phone": "+91-11-23381100",
+    "tags": {
+      "jurisdiction": "New Delhi"
+    }
+  },
+  {
+    "id": "poi-pol-5",
+    "name": "Hauz Khas Police Station",
+    "category": "Police",
+    "latitude": 28.5492,
+    "longitude": 77.2065,
+    "address": "Aurobindo Marg, Hauz Khas, New Delhi",
+    "phone": "+91-11-26510093",
+    "tags": {
+      "jurisdiction": "South Delhi"
+    }
+  },
+  {
+    "id": "poi-petrol-1",
+    "name": "IndianOil COCO Auto Care Centre",
+    "category": "PetrolStation",
+    "latitude": 28.6272,
+    "longitude": 77.2178,
+    "address": "Janpath Road, Near Windsor Place, New Delhi",
+    "tags": {
+      "brand": "IndianOil",
+      "fuel": "petrol,diesel,cng,ev"
+    }
+  },
+  {
+    "id": "poi-petrol-2",
+    "name": "Bharat Petroleum Chanakyapuri",
+    "category": "PetrolStation",
+    "latitude": 28.6015,
+    "longitude": 77.195,
+    "address": "Shanti Path, Chanakyapuri, New Delhi",
+    "tags": {
+      "brand": "BPCL",
+      "fuel": "petrol,diesel,ev"
+    }
+  },
+  {
+    "id": "poi-petrol-3",
+    "name": "HP Auto Centre Lodhi Road",
+    "category": "PetrolStation",
+    "latitude": 28.5905,
+    "longitude": 77.228,
+    "address": "Lodhi Road, Near Lodhi Gardens, New Delhi",
+    "tags": {
+      "brand": "HPCL",
+      "fuel": "petrol,diesel,cng"
+    }
+  },
+  {
+    "id": "poi-petrol-4",
+    "name": "Shell Fuel Station Moolchand",
+    "category": "PetrolStation",
+    "latitude": 28.563,
+    "longitude": 77.237,
+    "address": "Ring Road, Near Moolchand Flyover, New Delhi",
+    "tags": {
+      "brand": "Shell",
+      "fuel": "v-power,petrol,diesel"
+    }
+  },
+  {
+    "id": "poi-petrol-5",
+    "name": "IndianOil Petrol Pump AIIMS",
+    "category": "PetrolStation",
+    "latitude": 28.572,
+    "longitude": 77.205,
+    "address": "Ring Road, Safdarjung Enclave, New Delhi",
+    "tags": {
+      "brand": "IndianOil",
+      "fuel": "petrol,diesel"
+    }
+  },
+  {
+    "id": "poi-rest-1",
+    "name": "Saravana Bhavan Janpath",
+    "category": "Restaurant",
+    "latitude": 28.628,
+    "longitude": 77.2185,
+    "address": "P-13, Connaught Circus, Janpath, New Delhi",
+    "tags": {
+      "cuisine": "South Indian Vegetarian",
+      "rating": "4.5"
+    }
+  },
+  {
+    "id": "poi-rest-2",
+    "name": "Haldirams Connaught Place",
+    "category": "Restaurant",
+    "latitude": 28.631,
+    "longitude": 77.2205,
+    "address": "B-6, Connaught Place, New Delhi",
+    "tags": {
+      "cuisine": "North Indian, Sweets, Street Food",
+      "rating": "4.4"
+    }
+  },
+  {
+    "id": "poi-rest-3",
+    "name": "Karim's Historic Mughlai",
+    "category": "Restaurant",
+    "latitude": 28.6508,
+    "longitude": 77.2335,
+    "address": "Gali Kababian, Jama Masjid, Old Delhi",
+    "tags": {
+      "cuisine": "Mughlai, Kebabs",
+      "rating": "4.6"
+    }
+  },
+  {
+    "id": "poi-rest-4",
+    "name": "Bukhara Restaurant (ITC Maurya)",
+    "category": "Restaurant",
+    "latitude": 28.5975,
+    "longitude": 77.174,
+    "address": "ITC Maurya, Sardar Patel Marg, Diplomatic Enclave, New Delhi",
+    "tags": {
+      "cuisine": "North-West Frontier Fine Dining",
+      "rating": "4.8"
+    }
+  },
+  {
+    "id": "poi-rest-5",
+    "name": "Gulati Restaurant Pandara Road",
+    "category": "Restaurant",
+    "latitude": 28.608,
+    "longitude": 77.2345,
+    "address": "6, Pandara Road Market, India Gate, New Delhi",
+    "tags": {
+      "cuisine": "Butter Chicken, North Indian",
+      "rating": "4.6"
+    }
+  },
+  {
+    "id": "poi-hotel-1",
+    "name": "The Taj Mahal Hotel",
+    "category": "Hotel",
+    "latitude": 28.6048,
+    "longitude": 77.2255,
+    "address": "1, Mansingh Road, Near India Gate, New Delhi",
+    "phone": "+91-11-23026162",
+    "tags": {
+      "stars": "5",
+      "type": "luxury"
+    }
+  },
+  {
+    "id": "poi-hotel-2",
+    "name": "The Imperial New Delhi",
+    "category": "Hotel",
+    "latitude": 28.624,
+    "longitude": 77.2185,
+    "address": "Janpath Lane, Connaught Place, New Delhi",
+    "phone": "+91-11-23341234",
+    "tags": {
+      "stars": "5",
+      "type": "heritage_luxury"
+    }
+  },
+  {
+    "id": "poi-hotel-3",
+    "name": "ITC Maurya, A Luxury Collection Hotel",
+    "category": "Hotel",
+    "latitude": 28.597,
+    "longitude": 77.1735,
+    "address": "Diplomatic Enclave, Sardar Patel Marg, New Delhi",
+    "phone": "+91-11-26112233",
+    "tags": {
+      "stars": "5",
+      "type": "luxury"
+    }
+  },
+  {
+    "id": "poi-hotel-4",
+    "name": "The Leela Palace Chanakyapuri",
+    "category": "Hotel",
+    "latitude": 28.5795,
+    "longitude": 77.187,
+    "address": "Diplomatic Enclave, Chanakyapuri, New Delhi",
+    "phone": "+91-11-39331234",
+    "tags": {
+      "stars": "5",
+      "type": "luxury"
+    }
+  },
+  {
+    "id": "poi-hotel-5",
+    "name": "The Oberoi New Delhi",
+    "category": "Hotel",
+    "latitude": 28.5995,
+    "longitude": 77.24,
+    "address": "Dr Zakir Hussain Marg, Golf Links, New Delhi",
+    "phone": "+91-11-24363030",
+    "tags": {
+      "stars": "5",
+      "type": "luxury"
+    }
+  },
+  {
+    "id": "poi-edu-1",
+    "name": "Indian Institute of Technology Delhi (IIT Delhi)",
+    "category": "College",
+    "latitude": 28.545,
+    "longitude": 77.1926,
+    "address": "Hauz Khas, New Delhi",
+    "phone": "+91-11-26591000",
+    "tags": {
+      "type": "engineering_institute"
+    }
+  },
+  {
+    "id": "poi-edu-2",
+    "name": "Delhi University (North Campus)",
+    "category": "College",
+    "latitude": 28.6905,
+    "longitude": 77.2085,
+    "address": "University Enclave, North Campus, Delhi",
+    "tags": {
+      "type": "central_university"
+    }
+  },
+  {
+    "id": "poi-edu-3",
+    "name": "Delhi Public School R.K. Puram",
+    "category": "School",
+    "latitude": 28.563,
+    "longitude": 77.1795,
+    "address": "Sector 12, R.K. Puram, New Delhi",
+    "phone": "+91-11-49115555",
+    "tags": {
+      "type": "secondary_school"
+    }
+  },
+  {
+    "id": "poi-edu-4",
+    "name": "Modern School Barakhamba Road",
+    "category": "School",
+    "latitude": 28.6295,
+    "longitude": 77.2315,
+    "address": "Barakhamba Road, Connaught Place, New Delhi",
+    "tags": {
+      "type": "secondary_school"
+    }
+  },
+  {
+    "id": "poi-edu-5",
+    "name": "St. Stephen's College",
+    "category": "College",
+    "latitude": 28.685,
+    "longitude": 77.2115,
+    "address": "Sudhir Bose Marg, University Enclave, Delhi",
+    "tags": {
+      "type": "arts_science_college"
+    }
+  },
+  {
+    "id": "poi-transit-1",
+    "name": "New Delhi Railway Station (NDLS)",
+    "category": "RailwayStation",
+    "latitude": 28.6428,
+    "longitude": 77.2205,
+    "address": "Bhavbhuti Marg, Ratan Lal Market, Kamla Market, Ajmeri Gate, New Delhi",
+    "tags": {
+      "station_code": "NDLS",
+      "platforms": "16",
+      "metro_connected": "yes"
+    }
+  },
+  {
+    "id": "poi-transit-2",
+    "name": "Hazrat Nizamuddin Railway Station",
+    "category": "RailwayStation",
+    "latitude": 28.5885,
+    "longitude": 77.253,
+    "address": "Nizamuddin East, New Delhi",
+    "tags": {
+      "station_code": "NZM",
+      "platforms": "7"
+    }
+  },
+  {
+    "id": "poi-transit-3",
+    "name": "Anand Vihar Railway Terminal",
+    "category": "RailwayStation",
+    "latitude": 28.6505,
+    "longitude": 77.315,
+    "address": "Anand Vihar, East Delhi",
+    "tags": {
+      "station_code": "ANVT",
+      "metro_connected": "yes"
+    }
+  },
+  {
+    "id": "poi-transit-4",
+    "name": "Rajiv Chowk Metro Station",
+    "category": "RailwayStation",
+    "latitude": 28.6328,
+    "longitude": 77.2195,
+    "address": "Central Park, Connaught Place, New Delhi",
+    "tags": {
+      "type": "metro_interchange",
+      "lines": "Blue Line, Yellow Line"
+    }
+  },
+  {
+    "id": "poi-transit-5",
+    "name": "Old Delhi Railway Station (DLI)",
+    "category": "RailwayStation",
+    "latitude": 28.6615,
+    "longitude": 77.228,
+    "address": "Chandni Chowk, Old Delhi",
+    "tags": {
+      "station_code": "DLI",
+      "platforms": "16"
+    }
+  },
+  {
+    "id": "poi-air-1",
+    "name": "Indira Gandhi International Airport — Terminal 3",
+    "category": "Airport",
+    "latitude": 28.5562,
+    "longitude": 77.086,
+    "address": "Palam, New Delhi",
+    "phone": "+91-124-4797300",
+    "tags": {
+      "iata": "DEL",
+      "type": "international_domestic_terminal"
+    }
+  },
+  {
+    "id": "poi-air-2",
+    "name": "Indira Gandhi International Airport — Terminal 1",
+    "category": "Airport",
+    "latitude": 28.5685,
+    "longitude": 77.112,
+    "address": "Domestic Departures, Palam, New Delhi",
+    "tags": {
+      "iata": "DEL",
+      "type": "domestic_low_cost"
+    }
+  },
+  {
+    "id": "poi-air-3",
+    "name": "Indira Gandhi International Airport — Terminal 2",
+    "category": "Airport",
+    "latitude": 28.558,
+    "longitude": 77.095,
+    "address": "Terminal 2, IGI Airport, New Delhi",
+    "tags": {
+      "iata": "DEL",
+      "type": "domestic_terminal"
+    }
+  },
+  {
+    "id": "poi-land-1",
+    "name": "India Gate & Kartavya Path",
+    "category": "Landmark",
+    "latitude": 28.6129,
+    "longitude": 77.2295,
+    "address": "Rajpath / Kartavya Path, India Gate, New Delhi",
+    "tags": {
+      "tourism": "monument",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-land-2",
+    "name": "Rashtrapati Bhavan (President's House)",
+    "category": "Landmark",
+    "latitude": 28.6143,
+    "longitude": 77.1995,
+    "address": "Rashtrapati Bhawan, President's Estate, New Delhi",
+    "tags": {
+      "tourism": "heritage_residence",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-land-3",
+    "name": "Red Fort (Lal Qila)",
+    "category": "Landmark",
+    "latitude": 28.6562,
+    "longitude": 77.241,
+    "address": "Netaji Subhash Marg, Lal Qila, Chandni Chowk, New Delhi",
+    "tags": {
+      "unesco_world_heritage": "yes",
+      "historic": "mughal"
+    }
+  },
+  {
+    "id": "poi-land-4",
+    "name": "Qutub Minar & Complex",
+    "category": "Landmark",
+    "latitude": 28.5244,
+    "longitude": 77.1855,
+    "address": "Seth Sarai, Mehrauli, New Delhi",
+    "tags": {
+      "unesco_world_heritage": "yes",
+      "historic": "minaret"
+    }
+  },
+  {
+    "id": "poi-land-5",
+    "name": "Lotus Temple (Bahá'í House of Worship)",
+    "category": "Landmark",
+    "latitude": 28.5535,
+    "longitude": 77.2588,
+    "address": "Lotus Temple Road, Bahapur, Kalkaji, New Delhi",
+    "tags": {
+      "tourism": "worship",
+      "architecture": "lotus"
+    }
+  },
+  {
+    "id": "poi-land-6",
+    "name": "Swaminarayan Akshardham Temple",
+    "category": "Landmark",
+    "latitude": 28.6127,
+    "longitude": 77.2773,
+    "address": "NH 24, Pramukh Swami Maharaj Marg, New Delhi",
+    "tags": {
+      "tourism": "temple_complex",
+      "historic": "cultural"
+    }
+  },
+  {
+    "id": "poi-land-7",
+    "name": "Humayun's Tomb",
+    "category": "Landmark",
+    "latitude": 28.5933,
+    "longitude": 77.2507,
+    "address": "Mathura Road, Opposite Dargah Nizamuddin, New Delhi",
+    "tags": {
+      "unesco_world_heritage": "yes",
+      "historic": "mughal_tomb"
+    }
+  },
+  {
+    "id": "poi-land-8",
+    "name": "Jantar Mantar",
+    "category": "Landmark",
+    "latitude": 28.6271,
+    "longitude": 77.2166,
+    "address": "Sansad Marg, Connaught Place, New Delhi",
+    "tags": {
+      "unesco_world_heritage": "yes",
+      "historic": "astronomical_observatory"
+    }
+  },
+  {
+    "id": "poi-land-9",
+    "name": "National War Memorial",
+    "category": "Landmark",
+    "latitude": 28.6118,
+    "longitude": 77.2305,
+    "address": "C-Hexagon, India Gate, New Delhi",
+    "tags": {
+      "tourism": "memorial",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-land-10",
+    "name": "National Museum New Delhi",
+    "category": "Landmark",
+    "latitude": 28.6117,
+    "longitude": 77.2195,
+    "address": "Janpath, Near Rajpath, New Delhi",
+    "tags": {
+      "tourism": "museum",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-1",
+    "name": "Lalbagh Botanical Garden",
+    "category": "Landmark",
+    "latitude": 12.9507,
+    "longitude": 77.5848,
+    "address": "Mavalli, Bengaluru, Karnataka 560004",
+    "tags": {
+      "tourism": "garden",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-2",
+    "name": "Cubbon Park",
+    "category": "Landmark",
+    "latitude": 12.9763,
+    "longitude": 77.5929,
+    "address": "Kasturba Road, Sampangi Rama Nagara, Bengaluru",
+    "tags": {
+      "tourism": "park",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-3",
+    "name": "Vidhana Soudha",
+    "category": "Landmark",
+    "latitude": 12.9797,
+    "longitude": 77.5907,
+    "address": "Dr. B.R. Ambedkar Veedhi, Sampangi Rama Nagara, Bengaluru",
+    "tags": {
+      "tourism": "legislature",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-4",
+    "name": "Bull Temple (Nandi Temple)",
+    "category": "Landmark",
+    "latitude": 12.9423,
+    "longitude": 77.5679,
+    "address": "Bull Temple Road, Basavanagudi, Bengaluru 560004",
+    "tags": {
+      "tourism": "temple",
+      "historic": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-5",
+    "name": "ISRO Headquarters (Antariksh Bhavan)",
+    "category": "Landmark",
+    "latitude": 13.0305,
+    "longitude": 77.5647,
+    "address": "New BEL Road, RMV 2nd Stage, Bengaluru 560094",
+    "tags": {
+      "space": "navic_command",
+      "organization": "isro"
+    }
+  },
+  {
+    "id": "poi-blr-tran-1",
+    "name": "KSR Bengaluru City Railway Station",
+    "category": "Transit",
+    "latitude": 12.9782,
+    "longitude": 77.5695,
+    "address": "Kempegowda, Sevashrama, Bengaluru 560023",
+    "tags": {
+      "railway": "station",
+      "type": "junction"
+    }
+  },
+  {
+    "id": "poi-blr-tran-2",
+    "name": "Kempegowda Majestic Bus Station",
+    "category": "Transit",
+    "latitude": 12.9774,
+    "longitude": 77.5729,
+    "address": "Gubbi Veeranna Crescent Road, Majestic, Bengaluru",
+    "tags": {
+      "bus": "terminal",
+      "type": "intercity"
+    }
+  },
+  {
+    "id": "poi-blr-tran-3",
+    "name": "MG Road Metro Station",
+    "category": "Transit",
+    "latitude": 12.9756,
+    "longitude": 77.6067,
+    "address": "Mahatma Gandhi Road, Bengaluru 560001",
+    "tags": {
+      "subway": "station",
+      "line": "purple"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-1",
+    "name": "Manipal Hospital HAL Old Airport Road",
+    "category": "Hospital",
+    "latitude": 12.9584,
+    "longitude": 77.6489,
+    "address": "98, HAL Old Airport Road, Kodihalli, Bengaluru 560017",
+    "phone": "+91-80-25024444",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-2",
+    "name": "Fortis Hospital Bannerghatta",
+    "category": "Hospital",
+    "latitude": 12.8943,
+    "longitude": 77.5976,
+    "address": "154/9, Bannerghatta Road, Opposite IIM-B, Bengaluru 560076",
+    "phone": "+91-80-66214444",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-blr-land-6",
+    "name": "Jayanagar 4th Block Complex",
+    "category": "Landmark",
+    "latitude": 12.9298,
+    "longitude": 77.5835,
+    "address": "11th Main Rd, 4th Block, Jayanagar, Bengaluru 560011",
+    "tags": {
+      "shopping": "mall",
+      "market": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-land-7",
+    "name": "Koramangala 5th Block",
+    "category": "Landmark",
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "address": "Jyoti Nivas College Road, Koramangala, Bengaluru 560095",
+    "tags": {
+      "hub": "commercial",
+      "food": "cluster"
+    }
+  },
+  {
+    "id": "poi-blr-temple-1",
+    "name": "Sri Vidyapeetha & Subrahmanyeshwara Devasthanam",
+    "category": "Temple",
+    "latitude": 12.9343,
+    "longitude": 77.5627,
+    "address": "50 Feet Main Road, Ashoka Nagara, Banashankari, Bengaluru, Karnataka 560050",
+    "phone": "+91-80-26791234",
+    "tags": {
+      "historic": "yes",
+      "worship": "hindu"
+    }
+  },
+  {
+    "id": "poi-blr-temple-2",
+    "name": "Dodda Ganesha & Bull Temple",
+    "category": "Temple",
+    "latitude": 12.9425,
+    "longitude": 77.568,
+    "address": "Bull Temple Road, Basavanagudi, Bengaluru, Karnataka 560019",
+    "phone": "+91-80-26678771",
+    "tags": {
+      "historic": "yes",
+      "heritage": "16th century"
+    }
+  },
+  {
+    "id": "poi-blr-landmark-1",
+    "name": "Lalbagh Botanical Garden & Glass House",
+    "category": "Park",
+    "latitude": 12.9507,
+    "longitude": 77.5848,
+    "address": "Mavalli, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-26570181",
+    "tags": {
+      "type": "botanical_garden",
+      "entry": "ticketed"
+    }
+  },
+  {
+    "id": "poi-blr-landmark-2",
+    "name": "Cubbon Park & Sri Chamarajendra Park",
+    "category": "Park",
+    "latitude": 12.975,
+    "longitude": 77.593,
+    "address": "Kasturba Road, Sampangi Rama Nagara, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22864129",
+    "tags": {
+      "type": "public_park",
+      "area_acres": "300"
+    }
+  },
+  {
+    "id": "poi-blr-landmark-3",
+    "name": "Vidhana Soudha & High Court of Karnataka",
+    "category": "Landmark",
+    "latitude": 12.9795,
+    "longitude": 77.591,
+    "address": "Dr Ambedkar Veedhi, Sampangi Rama Nagara, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22253684",
+    "tags": {
+      "architecture": "neo-dravidian",
+      "government": "state_legislature"
+    }
+  },
+  {
+    "id": "poi-blr-landmark-4",
+    "name": "Bangalore Palace",
+    "category": "Landmark",
+    "latitude": 12.9988,
+    "longitude": 77.5921,
+    "address": "Vasanth Nagar, Bengaluru, Karnataka 560052",
+    "phone": "+91-80-23360818",
+    "tags": {
+      "heritage": "tudor_revival",
+      "royal": "wadiyar"
+    }
+  },
+  {
+    "id": "poi-blr-rail-1",
+    "name": "KSR Bengaluru City Railway Station (Majestic)",
+    "category": "RailwayStation",
+    "latitude": 12.978,
+    "longitude": 77.57,
+    "address": "Kempegowda, Sevashrama, Bengaluru, Karnataka 560023",
+    "phone": "+91-80-22871495",
+    "tags": {
+      "type": "junction",
+      "platforms": "10",
+      "metro_interchange": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-bus-1",
+    "name": "Kempegowda Bus Station (Majestic KSRTC / BMTC)",
+    "category": "BusStop",
+    "latitude": 12.9765,
+    "longitude": 77.5715,
+    "address": "Gubbi Veeranna Crescent Rd, Bengaluru, Karnataka 560009",
+    "phone": "+91-80-22952522",
+    "tags": {
+      "terminal": "central",
+      "bmtc": "yes",
+      "ksrtc": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-bus-2",
+    "name": "Banashankari TTMC Bus Terminal & Metro",
+    "category": "BusStop",
+    "latitude": 12.9155,
+    "longitude": 77.5735,
+    "address": "Kanakapura Road, 2nd Stage, Banashankari, Bengaluru, Karnataka 560070",
+    "phone": "+91-80-26710455",
+    "tags": {
+      "ttmc": "yes",
+      "metro_line": "green"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-1",
+    "name": "NIMHANS (National Institute of Mental Health & Neurosciences)",
+    "category": "Hospital",
+    "latitude": 12.9385,
+    "longitude": 77.594,
+    "address": "Hosur Road, Lakkasandra, Bengaluru, Karnataka 560029",
+    "phone": "+91-80-26995000",
+    "tags": {
+      "emergency": "yes",
+      "type": "national_institute"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-2",
+    "name": "Victoria Hospital & Bangalore Medical College",
+    "category": "Hospital",
+    "latitude": 12.963,
+    "longitude": 77.574,
+    "address": "Fort, Near City Market, Bengaluru, Karnataka 560002",
+    "phone": "+91-80-26701150",
+    "tags": {
+      "emergency": "yes",
+      "type": "public"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-3",
+    "name": "Fortis Hospital Bannerghatta Road",
+    "category": "Hospital",
+    "latitude": 12.8935,
+    "longitude": 77.5975,
+    "address": "154/9, Bannerghatta Main Rd, Opposite IIMB, Bengaluru, Karnataka 560076",
+    "phone": "+91-80-66214444",
+    "tags": {
+      "emergency": "yes",
+      "type": "private_multispeciality"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-4",
+    "name": "Apollo Speciality Hospital Jayanagar",
+    "category": "Hospital",
+    "latitude": 12.926,
+    "longitude": 77.5935,
+    "address": "21/2, 14th Cross Rd, 3rd Block, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-46688888",
+    "tags": {
+      "emergency": "yes",
+      "type": "private"
+    }
+  },
+  {
+    "id": "poi-blr-hosp-5",
+    "name": "Manipal Hospital Old Airport Road",
+    "category": "Hospital",
+    "latitude": 12.958,
+    "longitude": 77.6495,
+    "address": "98, HAL Old Airport Rd, Kodihalli, Bengaluru, Karnataka 560017",
+    "phone": "+91-80-25024444",
+    "tags": {
+      "emergency": "yes",
+      "type": "tertiary_care"
+    }
+  },
+  {
+    "id": "poi-blr-shop-1",
+    "name": "Jayanagar 4th Block Shopping Complex & BDA",
+    "category": "ShoppingMall",
+    "latitude": 12.9295,
+    "longitude": 77.5835,
+    "address": "9th Main Rd, 4th Block, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-22443322",
+    "tags": {
+      "market": "traditional_and_retail",
+      "stores": "200+"
+    }
+  },
+  {
+    "id": "poi-blr-shop-2",
+    "name": "UB City Mall & Commercial Hub",
+    "category": "ShoppingMall",
+    "latitude": 12.9715,
+    "longitude": 77.5955,
+    "address": "24, Vittal Mallya Rd, KG Halli, D' Souza Layout, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22645555",
+    "tags": {
+      "type": "luxury_mall",
+      "towers": "4"
+    }
+  },
+  {
+    "id": "poi-blr-shop-3",
+    "name": "Brigade Road & MG Road Retail Promenade",
+    "category": "ShoppingMall",
+    "latitude": 12.974,
+    "longitude": 77.6075,
+    "address": "Brigade Rd, Shanthala Nagar, Ashok Nagar, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-25588888",
+    "tags": {
+      "promenade": "pedestrian_friendly",
+      "shopping": "high_street"
+    }
+  },
+  {
+    "id": "poi-blr-tech-1",
+    "name": "Electronic City Phase 1 & Tech Hub",
+    "category": "Landmark",
+    "latitude": 12.845,
+    "longitude": 77.665,
+    "address": "Hosur Road, Electronic City, Bengaluru, Karnataka 560100",
+    "phone": "+91-80-28520000",
+    "tags": {
+      "hub": "it_electronics",
+      "companies": "infosys_wipro"
+    }
+  },
+  {
+    "id": "poi-blr-tech-2",
+    "name": "Koramangala Sony World Signal & Start-up Hub",
+    "category": "Landmark",
+    "latitude": 12.935,
+    "longitude": 77.6255,
+    "address": "80 Feet Rd, 4th Block, Koramangala, Bengaluru, Karnataka 560034",
+    "phone": "+91-80-25530000",
+    "tags": {
+      "hub": "startups_cafes",
+      "junction": "sony_world"
+    }
+  },
+  {
+    "id": "poi-blr-tech-3",
+    "name": "International Tech Park Bangalore (ITPL) Whitefield",
+    "category": "Landmark",
+    "latitude": 12.986,
+    "longitude": 77.73,
+    "address": "Whitefield Main Rd, Pattandur Agrahara, Bengaluru, Karnataka 560066",
+    "phone": "+91-80-41880000",
+    "tags": {
+      "type": "tech_park",
+      "pioneer": "singapore_consortium"
+    }
+  },
+  {
+    "id": "poi-blr-food-1",
+    "name": "Vidyarthi Bhavan (Iconic Heritage Dosa)",
+    "category": "Restaurant",
+    "latitude": 12.9468,
+    "longitude": 77.5695,
+    "address": "32, Gandhi Bazaar Main Rd, Basavanagudi, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-26677588",
+    "tags": {
+      "cuisine": "south_indian",
+      "established": "1943"
+    }
+  },
+  {
+    "id": "poi-blr-food-2",
+    "name": "MTR (Mavalli Tiffin Room Lalbagh)",
+    "category": "Restaurant",
+    "latitude": 12.955,
+    "longitude": 77.5855,
+    "address": "14, Lal Bagh Main Rd, Doddamavalli, Sudhama Nagar, Bengaluru, Karnataka 560027",
+    "phone": "+91-80-22220022",
+    "tags": {
+      "heritage": "1924",
+      "cuisine": "karnataka_vegetarian"
+    }
+  },
+  {
+    "id": "poi-blr-fuel-1",
+    "name": "Indian Oil Petrol Pump Kathriguppe",
+    "category": "PetrolStation",
+    "latitude": 12.925,
+    "longitude": 77.551,
+    "address": "Outer Ring Road, Kathriguppe, Banashankari 3rd Stage, Bengaluru, Karnataka 560085",
+    "phone": "+91-80-26725555",
+    "tags": {
+      "fuel": "petrol_diesel_cng",
+      "24x7": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-fuel-2",
+    "name": "Bharat Petroleum (BPCL) South End Circle",
+    "category": "PetrolStation",
+    "latitude": 12.9365,
+    "longitude": 77.5815,
+    "address": "RV Road, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-26567777",
+    "tags": {
+      "fuel": "petrol_diesel",
+      "air_service": "yes"
+    }
+  },
+  {
+    "id": "poi-blr-police-1",
+    "name": "Banashankari Traffic Police Station",
+    "category": "Police",
+    "latitude": 12.9205,
+    "longitude": 77.5745,
+    "address": "Kanakapura Main Road, 2nd Stage, Banashankari, Bengaluru, Karnataka 560070",
+    "phone": "+91-80-22942475",
+    "tags": {
+      "jurisdiction": "south_division",
+      "emergency": "112"
+    }
+  },
+  {
+    "id": "poi-blr-police-2",
+    "name": "Basavanagudi Police Station",
+    "category": "Police",
+    "latitude": 12.943,
+    "longitude": 77.575,
+    "address": "Kavi Lakshmisha Rd, Basavanagudi, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-22942468",
+    "tags": {
+      "jurisdiction": "south_division",
+      "emergency": "112"
+    }
+  }
+]

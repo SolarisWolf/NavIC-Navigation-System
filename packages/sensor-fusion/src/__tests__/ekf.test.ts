@@ -7,6 +7,7 @@ import {
   matrixTranspose,
   normalizeAngleRad,
   normalizeAngleDeg,
+  Float64Matrix,
 } from '../math/matrix.js';
 import { wgs84ToEnu, enuToWgs84 } from '../math/coordinates.js';
 import { ExtendedKalmanFilter } from '../ekf/extended-kalman-filter.js';
@@ -55,6 +56,64 @@ describe('Matrix Operations', () => {
     expect(normalizeAngleDeg(360)).toBe(0);
     expect(normalizeAngleDeg(370)).toBe(10);
     expect(normalizeAngleDeg(-10)).toBe(350);
+  });
+});
+
+describe('Float64Matrix In-Place Linear Algebra', () => {
+  it('should initialize with zeros and identity', () => {
+    const mat = new Float64Matrix(3, 3);
+    expect(mat.get(0, 0)).toBe(0);
+    mat.setIdentity();
+    expect(mat.get(0, 0)).toBe(1);
+    expect(mat.get(1, 1)).toBe(1);
+    expect(mat.get(0, 1)).toBe(0);
+  });
+
+  it('should multiply 2x2 matrices accurately in-place', () => {
+    const A = new Float64Matrix(2, 2);
+    A.set(0, 0, 1); A.set(0, 1, 2);
+    A.set(1, 0, 3); A.set(1, 1, 4);
+
+    const B = new Float64Matrix(2, 2);
+    B.set(0, 0, 2); B.set(0, 1, 0);
+    B.set(1, 0, 1); B.set(1, 1, 2);
+
+    const C = new Float64Matrix(2, 2);
+    Float64Matrix.multiply(A, B, C);
+    // [1*2 + 2*1, 1*0 + 2*2] = [4, 4]
+    // [3*2 + 4*1, 3*0 + 4*2] = [10, 8]
+    expect(C.get(0, 0)).toBe(4);
+    expect(C.get(0, 1)).toBe(4);
+    expect(C.get(1, 0)).toBe(10);
+    expect(C.get(1, 1)).toBe(8);
+  });
+
+  it('should invert 3x3 matrix in-place and guarantee A * inv = I', () => {
+    const A = new Float64Matrix(3, 3);
+    A.set(0, 0, 4); A.set(0, 1, 1); A.set(0, 2, 2);
+    A.set(1, 0, 1); A.set(1, 1, 5); A.set(1, 2, 0);
+    A.set(2, 0, 2); A.set(2, 1, 0); A.set(2, 2, 3);
+
+    const inv = new Float64Matrix(3, 3);
+    Float64Matrix.invert(A, inv);
+
+    const prod = new Float64Matrix(3, 3);
+    Float64Matrix.multiply(A, inv, prod);
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        expect(prod.get(i, j)).toBeCloseTo(i === j ? 1 : 0, 4);
+      }
+    }
+  });
+
+  it('should symmetrize matrix to enforce positive semi-definiteness', () => {
+    const A = new Float64Matrix(2, 2);
+    A.set(0, 0, 5); A.set(0, 1, 3.2);
+    A.set(1, 0, 3.0); A.set(1, 1, 4);
+
+    A.symmetrize();
+    expect(A.get(0, 1)).toBeCloseTo(3.1);
+    expect(A.get(1, 0)).toBeCloseTo(3.1);
   });
 });
 

@@ -10,6 +10,7 @@ import {
   type NavigationInstruction,
   type NavigationState,
   ManeuverType,
+  Logger,
 } from '@navic/shared-models';
 import type { GuidanceState } from '../guidance/guidance-engine';
 import {
@@ -23,6 +24,7 @@ import {
 } from './types';
 
 export class VoicePromptGenerator {
+  private readonly logger = new Logger('VoicePromptGenerator');
   private readonly thresholds: VoicePromptThresholds;
   private readonly listeners: VoicePromptListener[] = [];
 
@@ -364,7 +366,7 @@ export class VoicePromptGenerator {
       try {
         listener(prompt);
       } catch (err) {
-        console.error('[VoicePromptGenerator] Error in voice prompt listener:', err);
+        this.logger.error('Error in voice prompt listener:', err);
       }
     }
   }

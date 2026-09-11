@@ -176,7 +176,7 @@ class PowerServiceImpl {
   }
 
   private initBatteryMonitoring(): void {
-    // 1. Native Android battery updates
+    // 1. Native Android battery updates and 30s periodic polling
     const initialAndroidBattery = androidBridgeService.getBatteryStatus();
     if (initialAndroidBattery) {
       this.optimizer.updateBattery(initialAndroidBattery);
@@ -184,6 +184,14 @@ class PowerServiceImpl {
     androidBridgeService.onBatteryChanged((battery) => {
       this.optimizer.updateBattery(battery);
     });
+
+    this.optimizer.startBatteryPolling(() => {
+      if (androidBridgeService.isRunningInAndroid()) {
+        return androidBridgeService.getBatteryStatus();
+      }
+      return null;
+    }, 30000);
+
 
     // 2. Web Battery API fallback
     if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {

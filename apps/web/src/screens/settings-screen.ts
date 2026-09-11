@@ -293,15 +293,15 @@ export function renderSettingsScreen(container: HTMLElement): void {
             <span class="settings-interactive-row__desc">Simulate Android intent resolution from external apps (SMS, Calendar, Contacts)</span>
           </div>
           <div style="display: flex; gap: var(--space-2); margin-top: 4px;">
-            <input type="text" id="input-geo-intent-uri" class="settings-input" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-family: monospace; font-size: 13px;" value="geo:28.6129,77.2295?q=India+Gate">
+            <input type="text" id="input-geo-intent-uri" class="settings-input" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-family: monospace; font-size: 13px;" value="geo:12.9425,77.5680?q=Bull+Temple">
             <button class="btn btn--primary" id="btn-dispatch-geo-intent" style="white-space: nowrap;">
               🚀 Open Intent
             </button>
           </div>
           <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: 6px;">
-            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-1">📍 India Gate (geo:lat,lng)</button>
-            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-2">🔍 Connaught Place (geo:0,0?q=...)</button>
-            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-3">🧭 Red Fort (google.navigation:q=...)</button>
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-1">📍 Bull Temple (geo:lat,lng)</button>
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-2">🔍 Lalbagh (geo:0,0?q=...)</button>
+            <button class="btn btn--secondary btn--sm" id="btn-preset-geo-3">🧭 KSR Majestic (google.navigation:q=...)</button>
           </div>
           <span class="settings-test-status" id="geo-intent-status" style="margin-top: 4px;"></span>
         </div>
@@ -320,6 +320,42 @@ export function renderSettingsScreen(container: HTMLElement): void {
         ${settingsRow('Advance Warning Distance', '300 m (450 m at >50 km/h)')}
         ${settingsRow('Approach Warning Distance', '100 m')}
         ${settingsRow('Immediate Maneuver Distance', '30 m')}
+      </div>
+
+      <!-- Offline Regional Map Data Packages (Section 16) -->
+      <div class="settings-group settings-group--interactive" id="offline-data-settings-group">
+        <div class="settings-group__header">
+          <span class="settings-group__header-icon">🗺️</span>
+          Offline Regional Map Data Packages
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">India National Base Map</span>
+            <span class="settings-interactive-row__desc">State boundaries, national highways, and major junction corridors</span>
+          </div>
+          <span class="status-badge status-badge--active" style="font-weight: 600;">Installed ✓ (120 MB)</span>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Karnataka State Package</span>
+            <span class="settings-interactive-row__desc">State highways, connecting arterial roads, and intercity graph</span>
+          </div>
+          <span class="status-badge status-badge--active" style="font-weight: 600;">Installed ✓ (85 MB)</span>
+        </div>
+
+        <div class="settings-interactive-row">
+          <div class="settings-interactive-row__info">
+            <span class="settings-interactive-row__title">Bengaluru Metropolitan Package (Active Area)</span>
+            <span class="settings-interactive-row__desc">Full Street-Level Detail: 4,011-Node Road Graph, 6,915 Edges, Offline POI Database</span>
+          </div>
+          <span class="status-badge status-badge--active" style="font-weight: 600;">Installed ✓ (62 MB)</span>
+        </div>
+
+        ${settingsRow('Total Offline Storage Used', '~267 MB On-Device Flash Storage')}
+        ${settingsRow('Internet Requirement', '0 KB / Zero-Data Guarantee (100% Offline)')}
+        ${settingsRow('Routing Algorithm', 'Bidirectional Dijkstra / A* GraphHopper on Local Memory')}
       </div>
 
       <!-- System Info -->
@@ -660,15 +696,15 @@ export function renderSettingsScreen(container: HTMLElement): void {
   });
 
   btnPreset1?.addEventListener('click', () => {
-    if (inputGeoUri) inputGeoUri.value = 'geo:28.6129,77.2295?q=India+Gate';
+    if (inputGeoUri) inputGeoUri.value = 'geo:12.9425,77.5680?q=Bull+Temple';
   });
 
   btnPreset2?.addEventListener('click', () => {
-    if (inputGeoUri) inputGeoUri.value = 'geo:0,0?q=Connaught+Place';
+    if (inputGeoUri) inputGeoUri.value = 'geo:0,0?q=Lalbagh+Botanical+Garden';
   });
 
   btnPreset3?.addEventListener('click', () => {
-    if (inputGeoUri) inputGeoUri.value = 'google.navigation:q=28.6562,77.2410';
+    if (inputGeoUri) inputGeoUri.value = 'google.navigation:q=12.9780,77.5700';
   });
 
   btnDispatchGeo?.addEventListener('click', () => {

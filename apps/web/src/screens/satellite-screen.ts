@@ -88,6 +88,25 @@ export function renderSatelliteScreen(container: HTMLElement): void {
         border: 1px solid rgba(0, 229, 255, 0.3);
         margin-left: 4px;
       }
+      .sat-source-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        margin-bottom: var(--space-4);
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: #00e676;
+      }
+      .sat-source-banner--sim {
+        background: rgba(255, 179, 0, 0.1);
+        border: 1px solid rgba(255, 179, 0, 0.3);
+        color: #ffb300;
+      }
     </style>
 
     <div class="satellite-screen screen">
@@ -100,6 +119,11 @@ export function renderSatelliteScreen(container: HTMLElement): void {
           <span class="status-badge" id="sat-navic-badge">Checking NavIC...</span>
           <span class="status-badge status-badge--idle" id="sat-fix-badge">No Fix</span>
         </div>
+      </div>
+
+      <!-- Prominent Data Source Mode Indicator (Section 10 & 20) -->
+      <div class="sat-source-banner" id="sat-source-banner">
+        <span id="sat-source-banner-text">● CHECKING DATA SOURCE...</span>
       </div>
 
       <div class="satellite-screen__layout">
@@ -246,6 +270,19 @@ export function renderSatelliteScreen(container: HTMLElement): void {
 
 function updateSatelliteScreen(m: GNSSMeasurement): void {
   const isNoFix = m.fixType === FixType.NoFix;
+
+  // Source Mode Banner
+  const bannerEl = document.getElementById('sat-source-banner');
+  const bannerText = document.getElementById('sat-source-banner-text');
+  if (bannerEl && bannerText) {
+    if (gnssService.isHardware()) {
+      bannerEl.className = 'sat-source-banner';
+      bannerText.textContent = '● REAL HARDWARE ACTIVE (NATIVE ANDROID GNSS & 50 HZ IMU)';
+    } else {
+      bannerEl.className = 'sat-source-banner sat-source-banner--sim';
+      bannerText.textContent = '● SIMULATION MODE ACTIVE (SYNTHETIC CONSTELLATION SCENARIO)';
+    }
+  }
 
   // Fix badge
   const badge = document.getElementById('sat-fix-badge');

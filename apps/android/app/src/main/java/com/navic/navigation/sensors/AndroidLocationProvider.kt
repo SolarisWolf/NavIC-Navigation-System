@@ -40,6 +40,7 @@ class AndroidLocationProvider(
     private var gnssMeasurementsCallback: GnssMeasurementsEvent.Callback? = null
     private var cachedSatellites = JSONArray()
     private var cachedNavICReport: String? = null
+    private var cachedLastLocation: Location? = null
 
     init {
         setupGnssStatusCallback()
@@ -232,7 +233,13 @@ class AndroidLocationProvider(
 
     @SuppressLint("MissingPermission")
     fun start(): Boolean {
-        if (isTracking) return true
+        if (isTracking) {
+            cachedLastLocation?.let {
+                Log.i(TAG, "Re-dispatching cached last location to web: ${it.latitude}, ${it.longitude}")
+                onLocationChanged(it)
+            }
+            return true
+        }
 
         val hasFine = ContextCompat.checkSelfPermission(
             context,
@@ -247,20 +254,85 @@ class AndroidLocationProvider(
         val lm = locationManager ?: return false
 
         try {
+            // 1. Immediately dispatch best last known location so the user's position is visible instantly
+            val fallbackProviders = mutableListOf<String>()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && lm.allProviders.contains(LocationManager.FUSED_PROVIDER)) {
+                fallbackProviders.add(LocationManager.FUSED_PROVIDER)
+            }
+            fallbackProviders.add(LocationManager.GPS_PROVIDER)
+            fallbackProviders.add(LocationManager.NETWORK_PROVIDER)
+            fallbackProviders.add(LocationManager.PASSIVE_PROVIDER)
+
+            var bestLocation: Location? = null
+            for (provider in fallbackProviders) {
+                try {
+                    val loc = lm.getLastKnownLocation(provider)
+                    if (loc != null) {
+                        if (bestLocation == null || loc.time > bestLocation.time) {
+                            bestLocation = loc
+                        }
+                    }
+                } catch (e: SecurityException) {
+                    // ignore
+                } catch (e: Exception) {
+                    // ignore
+                }
+            }
+
+            if (bestLocation != null) {
+                Log.i(TAG, "Immediate initial fix from provider ${bestLocation.provider}: ${bestLocation.latitude}, ${bestLocation.longitude} (accuracy: ${bestLocation.accuracy}m)")
+                onLocationChanged(bestLocation)
+            }
+
+            // 2. Request updates from ALL enabled providers concurrently (GPS for satellite precision, Network for indoor speed)
+            var anyRequested = false
             if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                lm.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER,
-                    1000L,
-                    0f,
-                    this
-                )
-            } else if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                lm.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER,
-                    1000L,
-                    0f,
-                    this
-                )
+                try {
+                    lm.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        1000L,
+                        0f,
+                        this
+                    )
+                    anyRequested = true
+                    Log.i(TAG, "Registered GPS_PROVIDER location updates")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to register GPS_PROVIDER: ${e.message}")
+                }
+            }
+
+            if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                try {
+                    lm.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        1000L,
+                        0f,
+                        this
+                    )
+                    anyRequested = true
+                    Log.i(TAG, "Registered NETWORK_PROVIDER location updates")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to register NETWORK_PROVIDER: ${e.message}")
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && lm.allProviders.contains(LocationManager.FUSED_PROVIDER)) {
+                try {
+                    lm.requestLocationUpdates(
+                        LocationManager.FUSED_PROVIDER,
+                        1000L,
+                        0f,
+                        this
+                    )
+                    anyRequested = true
+                    Log.i(TAG, "Registered FUSED_PROVIDER location updates")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to register FUSED_PROVIDER: ${e.message}")
+                }
+            }
+
+            if (!anyRequested) {
+                Log.w(TAG, "No location providers were enabled or available on device")
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -277,7 +349,7 @@ class AndroidLocationProvider(
             }
 
             isTracking = true
-            Log.i(TAG, "Native GNSS tracking started with NavIC detection")
+            Log.i(TAG, "Native GNSS tracking started with multi-provider & NavIC detection")
             return true
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException starting location updates", e)
@@ -310,6 +382,7 @@ class AndroidLocationProvider(
     }
 
     override fun onLocationChanged(location: Location) {
+        cachedLastLocation = location
         val isMock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             location.isMock
         } else {
@@ -323,7 +396,7 @@ class AndroidLocationProvider(
             if (location.hasAccuracy()) location.accuracy.toDouble() * 1.5 else 8.0
         }
 
-        val fixTypeStr = if (cachedSatellites.length() >= 4 && location.hasAltitude()) "3d" else "2d"
+        val fixTypeStr = if (cachedSatellites.length() >= 4 && location.hasAltitude()) "3D" else "2D"
 
         val measurement = JSONObject().apply {
             put("timestamp", location.time)

@@ -64,11 +64,36 @@ declare global {
 
 class AndroidBridgeServiceImpl {
   private logger = new Logger('AndroidBridge');
-  private isNativeAndroid = typeof window !== 'undefined' && !!window.NavICNative;
+  public get isNativeAndroid(): boolean {
+    return typeof window !== 'undefined' && !!window.NavICNative;
+  }
   private deviceInfo: AndroidDeviceInfo | null = null;
+  private activeCleanups: Set<() => void> = new Set();
 
   constructor() {
     this.init();
+  }
+
+  private registerListener(eventName: string, handler: (evt: Event) => void): () => void {
+    if (typeof window === 'undefined') return () => {};
+    window.addEventListener(eventName, handler);
+    const cleanup = () => {
+      window.removeEventListener(eventName, handler);
+      this.activeCleanups.delete(cleanup);
+    };
+    this.activeCleanups.add(cleanup);
+    return cleanup;
+  }
+
+  public dispose(): void {
+    for (const cleanup of this.activeCleanups) {
+      try {
+        cleanup();
+      } catch (e) {
+        this.logger.warn('Error running listener cleanup:', e);
+      }
+    }
+    this.activeCleanups.clear();
   }
 
   private init(): void {
@@ -86,29 +111,37 @@ class AndroidBridgeServiceImpl {
   }
 
   public isRunningInAndroid(): boolean {
-    return this.isNativeAndroid;
+    return typeof window !== 'undefined' && !!window.NavICNative;
   }
 
   public getDeviceInfo(): AndroidDeviceInfo | null {
+    if (!this.deviceInfo && typeof window !== 'undefined' && window.NavICNative) {
+      try {
+        const raw = window.NavICNative.getAndroidEnvironmentInfo();
+        this.deviceInfo = JSON.parse(raw);
+      } catch (e) {
+        this.logger.warn('Failed to parse Android environment info:', e);
+      }
+    }
     return this.deviceInfo;
   }
 
   public isNavICSupported(): boolean {
-    if (this.isNativeAndroid && window.NavICNative) {
+    if (typeof window !== 'undefined' && window.NavICNative) {
       return window.NavICNative.isNavICSupported();
     }
     return false;
   }
 
   public startHardwareSensors(): boolean {
-    if (this.isNativeAndroid && window.NavICNative) {
+    if (typeof window !== 'undefined' && window.NavICNative) {
       return window.NavICNative.startHardwareSensors();
     }
     return false;
   }
 
   public stopHardwareSensors(): void {
-    if (this.isNativeAndroid && window.NavICNative) {
+    if (typeof window !== 'undefined' && window.NavICNative) {
       window.NavICNative.stopHardwareSensors();
     }
   }
@@ -121,58 +154,48 @@ class AndroidBridgeServiceImpl {
   }
 
   public onHardwareGNSS(callback: (m: GNSSMeasurement) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-gnss', (evt: Event) => {
       const customEvt = evt as CustomEvent<GNSSMeasurement>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-gnss', handler);
-    return () => window.removeEventListener('navic-hardware-gnss', handler);
+    });
   }
 
   public onHardwareGNSSStatus(callback: (s: AndroidHardwareStatus) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-gnss-status', (evt: Event) => {
       const customEvt = evt as CustomEvent<AndroidHardwareStatus>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-gnss-status', handler);
-    return () => window.removeEventListener('navic-hardware-gnss-status', handler);
+    });
   }
 
   public onHardwareAccel(callback: (r: AccelerometerReading) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-accel', (evt: Event) => {
       const customEvt = evt as CustomEvent<AccelerometerReading>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-accel', handler);
-    return () => window.removeEventListener('navic-hardware-accel', handler);
+    });
   }
 
   public onHardwareGyro(callback: (r: GyroscopeReading) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-gyro', (evt: Event) => {
       const customEvt = evt as CustomEvent<GyroscopeReading>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-gyro', handler);
-    return () => window.removeEventListener('navic-hardware-gyro', handler);
+    });
   }
 
   public onHardwareMag(callback: (r: MagnetometerReading) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-mag', (evt: Event) => {
       const customEvt = evt as CustomEvent<MagnetometerReading>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-mag', handler);
-    return () => window.removeEventListener('navic-hardware-mag', handler);
+    });
   }
 
   public setWakeLock(enabled: boolean): void {
@@ -202,14 +225,12 @@ class AndroidBridgeServiceImpl {
   }
 
   public onNavICReport(callback: (report: NavICSignalReport) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-report', (evt: Event) => {
       const customEvt = evt as CustomEvent<NavICSignalReport>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-report', handler);
-    return () => window.removeEventListener('navic-hardware-report', handler);
+    });
   }
 
   public getBatteryStatus(): BatteryTelemetry | null {
@@ -227,14 +248,12 @@ class AndroidBridgeServiceImpl {
   }
 
   public onBatteryChanged(callback: (battery: BatteryTelemetry) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('navic-hardware-battery', (evt: Event) => {
       const customEvt = evt as CustomEvent<BatteryTelemetry>;
       if (customEvt.detail) {
         callback(customEvt.detail);
       }
-    };
-    window.addEventListener('navic-hardware-battery', handler);
-    return () => window.removeEventListener('navic-hardware-battery', handler);
+    });
   }
 
   public setSensorSamplingRate(rateHz: number): void {
@@ -277,22 +296,18 @@ class AndroidBridgeServiceImpl {
   }
 
   public onGeoIntent(callback: (uri: string) => void): () => void {
-    const handler = (evt: Event) => {
+    return this.registerListener('android-geo-intent', (evt: Event) => {
       const customEvt = evt as CustomEvent<{ uri: string }>;
       if (customEvt.detail?.uri) {
         callback(customEvt.detail.uri);
       }
-    };
-    window.addEventListener('android-geo-intent', handler);
-    return () => window.removeEventListener('android-geo-intent', handler);
+    });
   }
 
   public onBackPressed(callback: () => void): () => void {
-    const handler = () => {
+    return this.registerListener('android-back-pressed', () => {
       callback();
-    };
-    window.addEventListener('android-back-pressed', handler);
-    return () => window.removeEventListener('android-back-pressed', handler);
+    });
   }
 
   public stopGuidance(): void {

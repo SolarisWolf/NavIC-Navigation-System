@@ -133,6 +133,32 @@ npm run dev --workspace=@navic/web
 - **Phase 18**: Final Offline Android Navigation featuring RFC 5870 Geo URI parsing (`geo:` and `google.navigation:` intent schemes), persistent offline trip state recovery across reboots and process recreation (`localStorage` + native bridge), native Android audio focus ducking (`AndroidAudioManager.kt` with `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`), sticky immersive driving mode (`WindowInsetsControllerCompat` hiding navigation/status bars), Android `OnBackPressedCallback` driving safety modal, expandable `BigTextStyle` foreground navigation notifications with live distance/turn updates and "Exit Navigation" action, dynamic Map Trip Recovery banner with one-tap restore, and Settings Android Platform Features control panel with Geo URI test simulator.
 - **Phase 19**: Performance & Reliability Testing featuring comprehensive automated Vitest benchmark suites (15,000-cycle 50 Hz EKF stability, 1,000-route scaled A* pathfinding distribution with p50/p95/p99 SLA validation, 100-km marathon navigation drive, anti-thrashing cooldown concurrency protection, 1,000 trip state fuzzing cycles, 10,000 Geo URI parsing stress, and 1:1 audio focus parity), browser-based `ReliabilityBenchmarkService` profiling live system throughput, upgraded tabbed Diagnostics & Reliability Workstation (`#/diagnostics`) with Production SLA Compliance Matrix, percentile breakdown cards, fault-tolerance resilience monitor, subsystem readiness audit, and one-click JSON and Markdown Audit Certificate exporter.
 - **Phase 20**: Final Validation & Demonstration featuring 100% end-to-end multi-constellation test suite (`end-to-end-validation.test.ts`), Grand Showcase & Release Demonstration Screen (`#/showcase`) with 8-stage interactive guided tour (`ShowcaseService`) simulating a complete journey through Connaught Place, Pragati Maidan tunnel blackout, dead reckoning continuity, and destination arrival, 20-phase capabilities matrix with feature deep-linking, Monorepo Architecture & Hardware Data Flow topology, and verified production Android debug APK (`app-debug.apk`, 6.17 MB).
+## 📱 Android APK & Installation
+
+A standalone, signed release APK is built and ready to share or install on any Android phone (Android 8.0+):
+
+- **Shareable APK Location**:
+  - `release/NavIC-Smart-Offline-Navigation-v1.0.0.apk` (10.68 MB)
+  - Also available at project root: `NavIC-Smart-Offline-Navigation-v1.0.0.apk`
+- **Package ID**: `com.navic.navigation`
+- **Application Label**: `NavIC Navigation`
+- **Signing**: APK Signature Scheme v2 (Self-signed release keystore)
+- **Features Bundled**:
+  - 100% Offline Complete Bengaluru OpenStreetMap vector road network (4,105 roads)
+  - 266 offline raster map tiles (zoom levels 11–15)
+  - Sub-millisecond A* pathfinding with perpendicular edge-segment snapping
+  - Voice turn-by-turn guidance and procedural audio chimes
+  - Bengaluru landmark POI spatial database
+  - Native Android hardware sensors (NavIC L5/S-band, GPS, 50 Hz IMU, battery monitor, wake lock)
+
+### How to Install and Share
+1. **Direct Sharing**: You can send `NavIC-Smart-Offline-Navigation-v1.0.0.apk` via WhatsApp, Google Drive, Nearby Share / Quick Share, Telegram, or USB file transfer.
+2. **On the Phone**:
+   - Open the `.apk` file from the Downloads folder or chat application.
+   - If prompted, tap **Settings** and toggle **"Allow from this source"** (Install unknown apps).
+   - Tap **Install**, then **Open**.
+   - Grant the Location permission when requested to enable live hardware GNSS tracking.
+
 ## ⚠️ Important Notes
 
 - **SIMULATION MODE**: All simulated GNSS/IMU data is clearly labeled. Never present simulated data as real hardware measurements.

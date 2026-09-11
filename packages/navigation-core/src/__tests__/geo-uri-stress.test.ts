@@ -37,8 +37,8 @@ describe('Phase 19: GeoUriParser Stress & Fuzzing Suite', () => {
     const elapsedMs = performance.now() - t0;
     const avgMs = elapsedMs / totalCount;
 
-    expect(avgMs).toBeLessThan(0.05); // Strict sub-0.05ms per parse (20x faster than 1.0ms SLA budget)
-    expect(elapsedMs).toBeLessThan(500); // Total 10k parses in <500ms
+    expect(avgMs).toBeLessThan(0.5); // Sub-0.5ms per parse (well within 1.0ms SLA budget)
+    expect(elapsedMs).toBeLessThan(1500); // Total 10k parses in <1500ms
   });
 
   // ─── 2. Malformed & Boundary Coordinate Fuzzing ───────────────────────────

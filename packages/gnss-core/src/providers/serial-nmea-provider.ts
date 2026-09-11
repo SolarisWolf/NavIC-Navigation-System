@@ -17,6 +17,7 @@ import {
   type SatelliteInfo,
   Constellation,
   FixType,
+  Logger,
 } from '@navic/shared-models';
 
 export interface NMEAParsedState {
@@ -35,6 +36,7 @@ export interface NMEAParsedState {
 export class SerialNMEAProvider implements GNSSProvider {
   readonly name = 'USB Serial / NMEA GNSS Hardware';
   readonly isSimulated = false;
+  private readonly logger = new Logger('SerialNMEAProvider');
 
   private isRunning = false;
   private hasFix = false;
@@ -107,7 +109,7 @@ export class SerialNMEAProvider implements GNSSProvider {
       this.readLoop();
       return true;
     } catch (err) {
-      console.error('[SerialNMEAProvider] Failed to connect to serial port:', err);
+      this.logger.error('Failed to connect to serial port:', err);
       return false;
     }
   }
@@ -131,7 +133,7 @@ export class SerialNMEAProvider implements GNSSProvider {
         }
       }
     } catch (err) {
-      console.error('[SerialNMEAProvider] Serial read error:', err);
+      this.logger.error('Serial read error:', err);
     }
   }
 
@@ -323,7 +325,7 @@ export class SerialNMEAProvider implements GNSSProvider {
       try {
         cb(measurement);
       } catch (err) {
-        console.error('[SerialNMEAProvider] Measurement callback error:', err);
+        this.logger.error('Measurement callback error:', err);
       }
     }
   }

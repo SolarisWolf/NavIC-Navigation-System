@@ -28,8 +28,11 @@ import { voiceGuidanceService } from '../services/voice-guidance-service.js';
 import { powerService } from '../services/power-service.js';
 import { androidBridgeService } from '../services/android-bridge-service.js';
 import { tripRecoveryService } from '../services/trip-recovery-service.js';
+import { positionService } from '../services/position-service.js';
 import { GeoUriParser } from '@navic/navigation-core';
 import { CATEGORY_ICONS, CATEGORY_LABELS, MANEUVER_ICONS } from './route-screen.js';
+import { GNSSQualityPill } from '../components/gnss-quality-pill.js';
+import { technicalSplitPanelInstance, destinationSearchModalInstance } from '../main.js';
 
 let map: L.Map | null = null;
 let vehicleMarker: L.Marker | null = null;
@@ -40,6 +43,7 @@ let routePolyline: L.Polyline | null = null;
 let routeCasingPolyline: L.Polyline | null = null;
 let poiLayerGroup: L.LayerGroup | null = null;
 let showPois = true;
+let gnssPill: GNSSQualityPill | null = null;
 
 let unsubscribeFusion: (() => void) | null = null;
 let unsubscribeDest: (() => void) | null = null;
@@ -106,6 +110,152 @@ function formatDist(meters?: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
+async function loadOfflineBengaluruFeatures(leafletMap: L.Map): Promise<void> {
+  // 1. Natural Landscaping: Lalbagh, Cubbon Park, Bugle Rock, Lakes
+  const landscapeGroup = L.layerGroup();
+
+  // Lalbagh Botanical Garden (Greenery)
+  L.polygon([
+    [12.9460, 77.5800],
+    [12.9555, 77.5840],
+    [12.9550, 77.5920],
+    [12.9460, 77.5910],
+  ], {
+    color: '#2e7d32',
+    fillColor: '#1b5e20',
+    fillOpacity: 0.35,
+    weight: 1.5,
+  }).bindTooltip('Lalbagh Botanical Garden (ಲಾಲ್‌ಬಾಗ್)', { sticky: true }).addTo(landscapeGroup);
+
+  // Lalbagh Lake
+  L.polygon([
+    [12.9470, 77.5880],
+    [12.9490, 77.5905],
+    [12.9475, 77.5925],
+    [12.9455, 77.5900],
+  ], {
+    color: '#0288d1',
+    fillColor: '#01579b',
+    fillOpacity: 0.6,
+    weight: 1.5,
+  }).bindTooltip('Lalbagh Lake (ಲಾಲ್‌ಬಾಗ್ ಕೆರೆ)', { sticky: true }).addTo(landscapeGroup);
+
+  // Cubbon Park
+  L.polygon([
+    [12.9710, 77.5900],
+    [12.9780, 77.5910],
+    [12.9790, 77.5960],
+    [12.9720, 77.5970],
+  ], {
+    color: '#2e7d32',
+    fillColor: '#1b5e20',
+    fillOpacity: 0.35,
+    weight: 1.5,
+  }).bindTooltip('Cubbon Park (ಕಬ್ಬನ್ ಪಾರ್ಕ್)', { sticky: true }).addTo(landscapeGroup);
+
+  // Bugle Rock Park
+  L.polygon([
+    [12.9415, 77.5670],
+    [12.9440, 77.5680],
+    [12.9435, 77.5705],
+    [12.9410, 77.5695],
+  ], {
+    color: '#2e7d32',
+    fillColor: '#1b5e20',
+    fillOpacity: 0.4,
+    weight: 1.5,
+  }).bindTooltip('Bugle Rock Park (ಕಹಳೆ ಬಂಡೆ)', { sticky: true }).addTo(landscapeGroup);
+
+  // Ulsoor Lake
+  L.polygon([
+    [12.9800, 77.6180],
+    [12.9860, 77.6200],
+    [12.9880, 77.6260],
+    [12.9820, 77.6270],
+  ], {
+    color: '#0288d1',
+    fillColor: '#01579b',
+    fillOpacity: 0.6,
+    weight: 1.5,
+  }).bindTooltip('Ulsoor Lake (ಹಲಸೂರು ಕೆರೆ)', { sticky: true }).addTo(landscapeGroup);
+
+  // Sankey Tank
+  L.polygon([
+    [13.0060, 77.5700],
+    [13.0110, 77.5710],
+    [13.0115, 77.5745],
+    [13.0065, 77.5735],
+  ], {
+    color: '#0288d1',
+    fillColor: '#01579b',
+    fillOpacity: 0.6,
+    weight: 1.5,
+  }).bindTooltip('Sankey Tank (ಸ್ಯಾಂಕಿ ಕೆರೆ)', { sticky: true }).addTo(landscapeGroup);
+
+  landscapeGroup.addTo(leafletMap);
+
+  // 2. Offline Vector Road Network from bundled data/bengaluru-roads.json (4,105 roads)
+  try {
+    const res = await fetch('data/bengaluru-roads.json');
+    if (!res.ok) return;
+    const roads = await res.json();
+    if (!Array.isArray(roads)) return;
+
+    const roadCanvasRenderer = L.canvas({ padding: 0.5 });
+    const roadsGroup = L.layerGroup();
+
+    for (const way of roads) {
+      if (!way.geometry || way.geometry.length < 2) continue;
+      const latlngs: [number, number][] = way.geometry.map((p: any) => [p.lat, p.lon]);
+      const hw = way.tags?.highway || 'residential';
+
+      let color = '#546e7a';
+      let weight = 1.6;
+      let opacity = 0.55;
+
+      if (hw === 'motorway' || hw === 'trunk') {
+        color = '#ff9100';
+        weight = 3.8;
+        opacity = 0.85;
+      } else if (hw === 'primary') {
+        color = '#ffa726';
+        weight = 3.0;
+        opacity = 0.8;
+      } else if (hw === 'secondary') {
+        color = '#ffe082';
+        weight = 2.4;
+        opacity = 0.75;
+      } else if (hw === 'tertiary') {
+        color = '#eceff1';
+        weight = 1.8;
+        opacity = 0.65;
+      }
+
+      const roadLine = L.polyline(latlngs, {
+        renderer: roadCanvasRenderer,
+        color,
+        weight,
+        opacity,
+        lineCap: 'round',
+        lineJoin: 'round',
+      });
+
+      const name = way.tags?.name;
+      const knName = way.tags?.['name:kn'];
+      if (name) {
+        const title = knName ? `${name} (${knName})` : name;
+        roadLine.bindTooltip(title, { sticky: true });
+      }
+
+      roadsGroup.addLayer(roadLine);
+    }
+
+    roadsGroup.addTo(leafletMap);
+  } catch (err) {
+    console.warn('Could not load offline vector roads:', err);
+  }
+}
+
 export function renderMapScreen(container: HTMLElement): void {
   // Clean up if already rendered
   if (unsubscribeFusion) {
@@ -140,6 +290,10 @@ export function renderMapScreen(container: HTMLElement): void {
     unsubscribeBackPress();
     unsubscribeBackPress = null;
   }
+  if (gnssPill) {
+    gnssPill.destroy();
+    gnssPill = null;
+  }
   if (map) {
     map.remove();
     map = null;
@@ -173,6 +327,38 @@ export function renderMapScreen(container: HTMLElement): void {
       </div>
 
       <div class="map-container" id="map-view">
+        <!-- Floating Top Bar: Destination Search Pill -->
+        <div class="map-top-bar" id="map-top-bar">
+          <div class="map-search-pill-container" id="map-search-pill-container">
+            <button class="map-mobile-search-pill" id="map-mobile-search-pill" type="button">
+              <span class="search-pill__icon">🔍</span>
+              <span class="search-pill__placeholder">Where to in Bengaluru?</span>
+              <span class="search-pill__badge">Offline</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating GNSS Quality Pill (Positioned cleanly below search bar) -->
+        <div id="map-gnss-pill-mount"></div>
+
+        <!-- GNSS Outage / Loss Alert Strip (Section 18) -->
+        <div class="map-gnss-status-strip map-gnss-status-strip--loss" id="map-gnss-loss-strip" style="display: none;">
+          <span class="gnss-strip-icon">⚠️</span>
+          <div class="gnss-strip-text">
+            <div class="gnss-strip-title">GNSS SIGNAL LOST</div>
+            <div class="gnss-strip-sub">Dead Reckoning Active (50 Hz IMU Fusion)</div>
+          </div>
+        </div>
+
+        <!-- GNSS Restored Banner Strip (Section 18) -->
+        <div class="map-gnss-status-strip map-gnss-status-strip--restored" id="map-gnss-restored-strip" style="display: none;">
+          <span class="gnss-strip-icon">✓</span>
+          <div class="gnss-strip-text">
+            <div class="gnss-strip-title">GNSS RESTORED</div>
+            <div class="gnss-strip-sub">EKF 3D Fix Reacquired</div>
+          </div>
+        </div>
+
         <!-- Floating Navigation Turn Guidance Banner -->
         <div class="map-nav-banner" id="map-nav-banner" style="display: none;">
           <!-- Re-routing Banner Strip -->
@@ -222,6 +408,27 @@ export function renderMapScreen(container: HTMLElement): void {
           <!-- Route Progress Track -->
           <div class="map-nav-progress-track">
             <div class="map-nav-progress-fill" id="map-nav-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Idle Location & Quick Discovery Card (Section 5) -->
+        <div class="map-idle-card" id="map-idle-card">
+          <div class="idle-card-top">
+            <div class="idle-location-info">
+              <span class="idle-location-dot">📍</span>
+              <div class="idle-location-text">
+                <div class="idle-location-title" id="idle-location-title">Current Location: Bengaluru</div>
+                <div class="idle-location-sub" id="idle-location-sub">Karnataka · 4,011 Roads Offline Ready</div>
+              </div>
+            </div>
+            <button class="btn btn--primary btn--sm" id="btn-idle-search" type="button">🔍 Search</button>
+          </div>
+          <div class="idle-quick-categories">
+            <button class="idle-cat-chip" data-cat="fuel" type="button">⛽ Fuel</button>
+            <button class="idle-cat-chip" data-cat="parking" type="button">🅿️ Parking</button>
+            <button class="idle-cat-chip" data-cat="hospital" type="button">🏥 Hospital</button>
+            <button class="idle-cat-chip" data-cat="food" type="button">🍽️ Food</button>
+            <button class="idle-cat-chip idle-cat-chip--tech" id="btn-idle-tech" type="button">⚡ Tech HUD</button>
           </div>
         </div>
 
@@ -280,32 +487,51 @@ export function renderMapScreen(container: HTMLElement): void {
       </div>
 
       <div class="map-controls">
-        <button class="map-btn map-btn--active" id="btn-follow" title="Follow Vehicle">🎯</button>
-        <button class="map-btn" id="btn-recenter" title="Recenter">⌖</button>
-        <button class="map-btn map-btn--active" id="btn-toggle-pois" title="Toggle POIs">📍</button>
-        <button class="map-btn" id="btn-outage" title="Simulate GNSS Outage (Test Dead Reckoning)">🚇 Outage</button>
+        <button class="map-btn map-btn--active" id="btn-follow" title="Recenter & Follow Vehicle">⌖</button>
         <button class="map-btn" id="btn-voice-toggle" title="Toggle Voice Guidance">🔊</button>
-        <button class="map-btn" id="btn-manual-reroute" title="Recalculate Route" style="display: none;">🔄 Re-route</button>
+        <button class="map-btn" id="btn-manual-reroute" title="Recalculate Route" style="display: none;">🔄</button>
       </div>
     </div>
   `;
+
+  // Determine initial center from live fused estimate or positionService
+  const initialCoord = fusionService.getLatestEstimate()?.coordinate || positionService.lastPosition?.coordinate;
+  const initialCenter: [number, number] = (initialCoord && initialCoord.latitude !== 0 && initialCoord.longitude !== 0)
+    ? [initialCoord.latitude, initialCoord.longitude]
+    : [12.9343, 77.5627];
+  const initialZoom = 15;
 
   // Initialize Leaflet Map
   map = L.map('map-view', {
     zoomControl: false,
     attributionControl: false,
-    maxZoom: 18,
+    maxZoom: 19,
     minZoom: 3,
-  }).setView([28.6139, 77.2090], 13); // Default to Delhi
+  }).setView(initialCenter, initialZoom);
 
   // Add Zoom Control to bottom-left
   L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-  // Add Tile Layer targeting local MBTiles
-  L.tileLayer('/api/tiles/{z}/{x}/{y}', {
-    maxNativeZoom: 18,
-    maxZoom: 18,
+  // 1. Primary Offline Tile Layer: Loads bundled local tiles from tiles/{z}/{x}/{y}.png (266 tiles)
+  // Operates 100% offline without requiring internet on Android WebView and desktop web.
+  L.tileLayer('tiles/{z}/{x}/{y}.png', {
+    minZoom: 11,
+    maxNativeZoom: 15,
+    maxZoom: 19,
+    errorTileUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="%231a202c"/><path d="M0 64 H256 M0 128 H256 M0 192 H256 M64 0 V256 M128 0 V256 M192 0 V256" stroke="%232d3748" stroke-width="1"/></svg>',
   }).addTo(map);
+
+  // 2. Online Tile Layer fallback (only if connected)
+  if (navigator.onLine) {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c'],
+      opacity: 0.85,
+    }).addTo(map);
+  }
+
+  // 3. Load Offline Bengaluru Vector Road Network (4,011 roads), Parks & Water bodies
+  loadOfflineBengaluruFeatures(map);
 
   // Initialize Polyline for vehicle track
   pathLine = L.polyline([], {
@@ -350,42 +576,74 @@ export function renderMapScreen(container: HTMLElement): void {
     updateFollowBtn();
   });
 
+  // Mount GNSS Quality Pill
+  const pillMount = document.getElementById('map-gnss-pill-mount');
+  if (pillMount) {
+    gnssPill = new GNSSQualityPill(pillMount);
+  }
+
+  // Floating search pill & idle card interactions
+  const searchPill = document.getElementById('map-mobile-search-pill');
+  searchPill?.addEventListener('click', () => {
+    destinationSearchModalInstance?.open();
+  });
+
+  const btnIdleSearch = document.getElementById('btn-idle-search');
+  btnIdleSearch?.addEventListener('click', () => {
+    destinationSearchModalInstance?.open();
+  });
+
+  const idleCatChips = container.querySelectorAll('.idle-cat-chip');
+  idleCatChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const cat = chip.getAttribute('data-cat');
+      if (cat) {
+        destinationSearchModalInstance?.open(cat);
+      }
+    });
+  });
+
+  // Technical HUD triggers
+  const btnTechHud = document.getElementById('btn-tech-hud');
+  btnTechHud?.addEventListener('click', () => {
+    technicalSplitPanelInstance?.toggle();
+  });
+
+  const btnIdleTech = document.getElementById('btn-idle-tech');
+  btnIdleTech?.addEventListener('click', () => {
+    technicalSplitPanelInstance?.toggle();
+  });
+
+  // Tap-to-dismiss alert strips
+  document.getElementById('map-gnss-loss-strip')?.addEventListener('click', () => {
+    const strip = document.getElementById('map-gnss-loss-strip');
+    if (strip) strip.style.display = 'none';
+  });
+  document.getElementById('map-gnss-restored-strip')?.addEventListener('click', () => {
+    const strip = document.getElementById('map-gnss-restored-strip');
+    if (strip) strip.style.display = 'none';
+  });
+
   const btnFollow = document.getElementById('btn-follow');
-  const btnRecenter = document.getElementById('btn-recenter');
-  const btnTogglePois = document.getElementById('btn-toggle-pois');
-  const btnOutage = document.getElementById('btn-outage');
   const btnCloseNav = document.getElementById('btn-close-nav');
 
-  btnFollow?.addEventListener('click', () => {
-    isFollowing = !isFollowing;
-    updateFollowBtn();
-    if (isFollowing && vehicleMarker) {
-      map?.panTo(vehicleMarker.getLatLng());
-    }
-  });
-
-  btnRecenter?.addEventListener('click', () => {
-    if (vehicleMarker) {
-      map?.panTo(vehicleMarker.getLatLng());
-      isFollowing = true;
-      updateFollowBtn();
-    }
-  });
-
-  btnTogglePois?.addEventListener('click', () => {
-    if (!map || !poiLayerGroup) return;
-    showPois = !showPois;
-    if (showPois) {
-      map.addLayer(poiLayerGroup);
-      btnTogglePois.classList.add('map-btn--active');
+  function updateFollowBtn(): void {
+    if (!btnFollow) return;
+    if (isFollowing) {
+      btnFollow.classList.add('map-btn--active');
+      btnFollow.title = 'Camera Locked (Following Vehicle)';
     } else {
-      map.removeLayer(poiLayerGroup);
-      btnTogglePois.classList.remove('map-btn--active');
+      btnFollow.classList.remove('map-btn--active');
+      btnFollow.title = 'Camera Free (Tap to Recenter)';
     }
-  });
+  }
 
-  btnOutage?.addEventListener('click', () => {
-    fusionService.triggerGNSSOutage(5000); // 5s GNSS outage
+  btnFollow?.addEventListener('click', () => {
+    isFollowing = true;
+    updateFollowBtn();
+    if (vehicleMarker) {
+      map?.panTo(vehicleMarker.getLatLng(), { animate: true, duration: 0.3 });
+    }
   });
 
   const btnStartNavMap = document.getElementById('btn-start-nav-map');
@@ -589,13 +847,23 @@ function updateNavigationUI(state: NavigationState): void {
   const tripBar = document.getElementById('map-trip-bar');
   const btnManualReroute = document.getElementById('btn-manual-reroute');
 
+  const searchContainer = document.getElementById('map-search-pill-container');
+  const idleCard = document.getElementById('map-idle-card');
+  const mapScreenEl = document.querySelector('.map-screen');
+
   if (!state.route) {
     if (banner) banner.style.display = 'none';
     if (tripBar) tripBar.style.display = 'none';
     if (btnManualReroute) btnManualReroute.style.display = 'none';
+    if (searchContainer) searchContainer.style.display = '';
+    if (idleCard) idleCard.style.display = 'flex';
+    mapScreenEl?.classList.remove('map-screen--navigating');
     return;
   }
 
+  if (searchContainer) searchContainer.style.display = 'none';
+  if (idleCard) idleCard.style.display = 'none';
+  mapScreenEl?.classList.add('map-screen--navigating');
   if (banner) banner.style.display = 'flex';
 
   if (state.mode === NavigationMode.Rerouting) {
@@ -933,14 +1201,40 @@ function updateMapState(estimate: FusedPositionEstimate): void {
       icon: createVehicleIcon(isDr),
       zIndexOffset: 1000,
     }).addTo(map);
-    lastDrState = isDr;
   } else {
     // If dead reckoning mode changed, swap icon color
     if (isDr !== lastDrState) {
       vehicleMarker.setIcon(createVehicleIcon(isDr));
-      lastDrState = isDr;
     }
     vehicleMarker.setLatLng(latLng);
+  }
+
+  // Check and trigger GNSS loss / restored alert strips
+  const lossStrip = document.getElementById('map-gnss-loss-strip');
+  const restoredStrip = document.getElementById('map-gnss-restored-strip');
+  if (!isInit && isDr && !lastDrState) {
+    if (lossStrip) {
+      lossStrip.style.display = 'flex';
+      setTimeout(() => {
+        if (lossStrip) lossStrip.style.display = 'none';
+      }, 4000);
+    }
+    if (restoredStrip) restoredStrip.style.display = 'none';
+  } else if (!isInit && !isDr && lastDrState) {
+    if (lossStrip) lossStrip.style.display = 'none';
+    if (restoredStrip) {
+      restoredStrip.style.display = 'flex';
+      setTimeout(() => {
+        if (restoredStrip) restoredStrip.style.display = 'none';
+      }, 3500);
+    }
+  }
+  lastDrState = isDr;
+
+  // Update idle location card subtitle
+  const idleSub = document.getElementById('idle-location-sub');
+  if (idleSub && !navigationService.isNavigating) {
+    idleSub.textContent = `📍 ${displayLat.toFixed(4)}°N, ${displayLon.toFixed(4)}°E · 4,011 Roads Offline Ready`;
   }
 
   // Rotate vehicle icon smoothly

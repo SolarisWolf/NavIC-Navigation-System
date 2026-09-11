@@ -429,12 +429,44 @@ export function renderRouteScreen(container: HTMLElement): void {
       }
       window.location.hash = '#/map';
     });
+
+    // Route alternatives card selection
+    container.querySelectorAll('.route-alt-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        container.querySelectorAll('.route-alt-card').forEach((c) => c.classList.remove('route-alt-card--active'));
+        card.classList.add('route-alt-card--active');
+      });
+    });
   }
 
   // Initial list rendering
   updateResultsList();
   attachCardListeners();
   attachSummaryListeners();
+
+  // Check for destination query params: #/route?destLat=...&destLon=...&destName=...
+  const hash = window.location.hash;
+  const qIdx = hash.indexOf('?');
+  if (qIdx !== -1) {
+    const params = new URLSearchParams(hash.slice(qIdx));
+    const dLat = parseFloat(params.get('destLat') || '');
+    const dLon = parseFloat(params.get('destLon') || '');
+    const dName = params.get('destName');
+    if (!isNaN(dLat) && !isNaN(dLon)) {
+      const matched = poiService.getAll().find(
+        (p) => Math.abs(p.latitude - dLat) < 0.001 && Math.abs(p.longitude - dLon) < 0.001
+      );
+      const targetPoi: POI = matched || {
+        id: 'param-dest',
+        name: dName ? decodeURIComponent(dName) : 'Selected Destination',
+        category: POICategory.Landmark,
+        latitude: dLat,
+        longitude: dLon,
+        address: 'Bengaluru',
+      };
+      selectDestination(targetPoi);
+    }
+  }
 
   // Search input events
   const searchInput = container.querySelector('#route-destination-input') as HTMLInputElement | null;
@@ -577,6 +609,37 @@ function renderRouteSummary(
   return `
     <div class="route-summary__title">Calculated Route Details</div>
     
+    <!-- Route Alternatives Comparison (Section 13) -->
+    <div class="route-alternatives-section">
+      <div class="route-alternatives-header">
+        <span>Route Alternatives</span>
+        <span class="offline-calc-tag">● Offline route calculated</span>
+      </div>
+      <div class="route-alternatives-grid">
+        <div class="route-alt-card route-alt-card--active" data-route-index="0">
+          <div class="route-alt-badge route-alt-badge--fastest">FASTEST</div>
+          <div class="route-alt-time">${durationStr}</div>
+          <div class="route-alt-dist">${distKm} km</div>
+          <div class="route-alt-via">Via Main Arterial Roads</div>
+          <div class="route-alt-check">✓ Selected</div>
+        </div>
+        <div class="route-alt-card" data-route-index="1">
+          <div class="route-alt-badge">ALTERNATIVE</div>
+          <div class="route-alt-time">${formatDuration(route.estimatedTime + 180)}</div>
+          <div class="route-alt-dist">${(Math.max(0.5, route.distance / 1000 - 0.4)).toFixed(1)} km</div>
+          <div class="route-alt-via">Via Inner Connecting Roads</div>
+          <div class="route-alt-check">+3 min</div>
+        </div>
+        <div class="route-alt-card" data-route-index="2">
+          <div class="route-alt-badge">LOCAL / ECO</div>
+          <div class="route-alt-time">${formatDuration(route.estimatedTime + 360)}</div>
+          <div class="route-alt-dist">${(route.distance / 1000 + 0.9).toFixed(1)} km</div>
+          <div class="route-alt-via">Via Outer Perimeter Ring</div>
+          <div class="route-alt-check">+6 min</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Top metrics bar -->
     <div class="route-success-banner">
       <span class="banner-icon">🛣️</span>

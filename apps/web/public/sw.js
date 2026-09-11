@@ -47,8 +47,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Strategy A: Map Tile Requests (/api/tiles/*) — Cache-First with Network Fallback
-  if (url.pathname.startsWith('/api/tiles/')) {
+  // Strategy A: Map Tile Requests (/api/tiles/*, OSM, CartoDB) — Cache-First with Network Fallback
+  const isTileRequest =
+    url.pathname.startsWith('/api/tiles/') ||
+    url.hostname.includes('tile.openstreetmap.org') ||
+    url.hostname.includes('cartocdn.com') ||
+    url.hostname.includes('tile.osm.org');
+
+  if (isTileRequest) {
     event.respondWith(
       caches.open(TILES_CACHE_NAME).then(async (tileCache) => {
         const cachedResponse = await tileCache.match(event.request);

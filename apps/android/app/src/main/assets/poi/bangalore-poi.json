@@ -1,0 +1,262 @@
+[
+  {
+    "id": "poi-blr-temple-1",
+    "name": "Sri Vidyapeetha & Subrahmanyeshwara Devasthanam",
+    "category": "Temple",
+    "latitude": 12.9343,
+    "longitude": 77.5627,
+    "address": "50 Feet Main Road, Ashoka Nagara, Banashankari, Bengaluru, Karnataka 560050",
+    "phone": "+91-80-26791234",
+    "tags": { "historic": "yes", "worship": "hindu" }
+  },
+  {
+    "id": "poi-blr-temple-2",
+    "name": "Dodda Ganesha & Bull Temple",
+    "category": "Temple",
+    "latitude": 12.9425,
+    "longitude": 77.5680,
+    "address": "Bull Temple Road, Basavanagudi, Bengaluru, Karnataka 560019",
+    "phone": "+91-80-26678771",
+    "tags": { "historic": "yes", "heritage": "16th century" }
+  },
+  {
+    "id": "poi-blr-landmark-1",
+    "name": "Lalbagh Botanical Garden & Glass House",
+    "category": "Park",
+    "latitude": 12.9507,
+    "longitude": 77.5848,
+    "address": "Mavalli, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-26570181",
+    "tags": { "type": "botanical_garden", "entry": "ticketed" }
+  },
+  {
+    "id": "poi-blr-landmark-2",
+    "name": "Cubbon Park & Sri Chamarajendra Park",
+    "category": "Park",
+    "latitude": 12.9750,
+    "longitude": 77.5930,
+    "address": "Kasturba Road, Sampangi Rama Nagara, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22864129",
+    "tags": { "type": "public_park", "area_acres": "300" }
+  },
+  {
+    "id": "poi-blr-landmark-3",
+    "name": "Vidhana Soudha & High Court of Karnataka",
+    "category": "Landmark",
+    "latitude": 12.9795,
+    "longitude": 77.5910,
+    "address": "Dr Ambedkar Veedhi, Sampangi Rama Nagara, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22253684",
+    "tags": { "architecture": "neo-dravidian", "government": "state_legislature" }
+  },
+  {
+    "id": "poi-blr-landmark-4",
+    "name": "Bangalore Palace",
+    "category": "Landmark",
+    "latitude": 12.9988,
+    "longitude": 77.5921,
+    "address": "Vasanth Nagar, Bengaluru, Karnataka 560052",
+    "phone": "+91-80-23360818",
+    "tags": { "heritage": "tudor_revival", "royal": "wadiyar" }
+  },
+  {
+    "id": "poi-blr-rail-1",
+    "name": "KSR Bengaluru City Railway Station (Majestic)",
+    "category": "RailwayStation",
+    "latitude": 12.9780,
+    "longitude": 77.5700,
+    "address": "Kempegowda, Sevashrama, Bengaluru, Karnataka 560023",
+    "phone": "+91-80-22871495",
+    "tags": { "type": "junction", "platforms": "10", "metro_interchange": "yes" }
+  },
+  {
+    "id": "poi-blr-bus-1",
+    "name": "Kempegowda Bus Station (Majestic KSRTC / BMTC)",
+    "category": "BusStop",
+    "latitude": 12.9765,
+    "longitude": 77.5715,
+    "address": "Gubbi Veeranna Crescent Rd, Bengaluru, Karnataka 560009",
+    "phone": "+91-80-22952522",
+    "tags": { "terminal": "central", "bmtc": "yes", "ksrtc": "yes" }
+  },
+  {
+    "id": "poi-blr-bus-2",
+    "name": "Banashankari TTMC Bus Terminal & Metro",
+    "category": "BusStop",
+    "latitude": 12.9155,
+    "longitude": 77.5735,
+    "address": "Kanakapura Road, 2nd Stage, Banashankari, Bengaluru, Karnataka 560070",
+    "phone": "+91-80-26710455",
+    "tags": { "ttmc": "yes", "metro_line": "green" }
+  },
+  {
+    "id": "poi-blr-hosp-1",
+    "name": "NIMHANS (National Institute of Mental Health & Neurosciences)",
+    "category": "Hospital",
+    "latitude": 12.9385,
+    "longitude": 77.5940,
+    "address": "Hosur Road, Lakkasandra, Bengaluru, Karnataka 560029",
+    "phone": "+91-80-26995000",
+    "tags": { "emergency": "yes", "type": "national_institute" }
+  },
+  {
+    "id": "poi-blr-hosp-2",
+    "name": "Victoria Hospital & Bangalore Medical College",
+    "category": "Hospital",
+    "latitude": 12.9630,
+    "longitude": 77.5740,
+    "address": "Fort, Near City Market, Bengaluru, Karnataka 560002",
+    "phone": "+91-80-26701150",
+    "tags": { "emergency": "yes", "type": "public" }
+  },
+  {
+    "id": "poi-blr-hosp-3",
+    "name": "Fortis Hospital Bannerghatta Road",
+    "category": "Hospital",
+    "latitude": 12.8935,
+    "longitude": 77.5975,
+    "address": "154/9, Bannerghatta Main Rd, Opposite IIMB, Bengaluru, Karnataka 560076",
+    "phone": "+91-80-66214444",
+    "tags": { "emergency": "yes", "type": "private_multispeciality" }
+  },
+  {
+    "id": "poi-blr-hosp-4",
+    "name": "Apollo Speciality Hospital Jayanagar",
+    "category": "Hospital",
+    "latitude": 12.9260,
+    "longitude": 77.5935,
+    "address": "21/2, 14th Cross Rd, 3rd Block, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-46688888",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-blr-hosp-5",
+    "name": "Manipal Hospital Old Airport Road",
+    "category": "Hospital",
+    "latitude": 12.9580,
+    "longitude": 77.6495,
+    "address": "98, HAL Old Airport Rd, Kodihalli, Bengaluru, Karnataka 560017",
+    "phone": "+91-80-25024444",
+    "tags": { "emergency": "yes", "type": "tertiary_care" }
+  },
+  {
+    "id": "poi-blr-shop-1",
+    "name": "Jayanagar 4th Block Shopping Complex & BDA",
+    "category": "ShoppingMall",
+    "latitude": 12.9295,
+    "longitude": 77.5835,
+    "address": "9th Main Rd, 4th Block, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-22443322",
+    "tags": { "market": "traditional_and_retail", "stores": "200+" }
+  },
+  {
+    "id": "poi-blr-shop-2",
+    "name": "UB City Mall & Commercial Hub",
+    "category": "ShoppingMall",
+    "latitude": 12.9715,
+    "longitude": 77.5955,
+    "address": "24, Vittal Mallya Rd, KG Halli, D' Souza Layout, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-22645555",
+    "tags": { "type": "luxury_mall", "towers": "4" }
+  },
+  {
+    "id": "poi-blr-shop-3",
+    "name": "Brigade Road & MG Road Retail Promenade",
+    "category": "ShoppingMall",
+    "latitude": 12.9740,
+    "longitude": 77.6075,
+    "address": "Brigade Rd, Shanthala Nagar, Ashok Nagar, Bengaluru, Karnataka 560001",
+    "phone": "+91-80-25588888",
+    "tags": { "promenade": "pedestrian_friendly", "shopping": "high_street" }
+  },
+  {
+    "id": "poi-blr-tech-1",
+    "name": "Electronic City Phase 1 & Tech Hub",
+    "category": "Landmark",
+    "latitude": 12.8450,
+    "longitude": 77.6650,
+    "address": "Hosur Road, Electronic City, Bengaluru, Karnataka 560100",
+    "phone": "+91-80-28520000",
+    "tags": { "hub": "it_electronics", "companies": "infosys_wipro" }
+  },
+  {
+    "id": "poi-blr-tech-2",
+    "name": "Koramangala Sony World Signal & Start-up Hub",
+    "category": "Landmark",
+    "latitude": 12.9350,
+    "longitude": 77.6255,
+    "address": "80 Feet Rd, 4th Block, Koramangala, Bengaluru, Karnataka 560034",
+    "phone": "+91-80-25530000",
+    "tags": { "hub": "startups_cafes", "junction": "sony_world" }
+  },
+  {
+    "id": "poi-blr-tech-3",
+    "name": "International Tech Park Bangalore (ITPL) Whitefield",
+    "category": "Landmark",
+    "latitude": 12.9860,
+    "longitude": 77.7300,
+    "address": "Whitefield Main Rd, Pattandur Agrahara, Bengaluru, Karnataka 560066",
+    "phone": "+91-80-41880000",
+    "tags": { "type": "tech_park", "pioneer": "singapore_consortium" }
+  },
+  {
+    "id": "poi-blr-food-1",
+    "name": "Vidyarthi Bhavan (Iconic Heritage Dosa)",
+    "category": "Restaurant",
+    "latitude": 12.9468,
+    "longitude": 77.5695,
+    "address": "32, Gandhi Bazaar Main Rd, Basavanagudi, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-26677588",
+    "tags": { "cuisine": "south_indian", "established": "1943" }
+  },
+  {
+    "id": "poi-blr-food-2",
+    "name": "MTR (Mavalli Tiffin Room Lalbagh)",
+    "category": "Restaurant",
+    "latitude": 12.9550,
+    "longitude": 77.5855,
+    "address": "14, Lal Bagh Main Rd, Doddamavalli, Sudhama Nagar, Bengaluru, Karnataka 560027",
+    "phone": "+91-80-22220022",
+    "tags": { "heritage": "1924", "cuisine": "karnataka_vegetarian" }
+  },
+  {
+    "id": "poi-blr-fuel-1",
+    "name": "Indian Oil Petrol Pump Kathriguppe",
+    "category": "PetrolStation",
+    "latitude": 12.9250,
+    "longitude": 77.5510,
+    "address": "Outer Ring Road, Kathriguppe, Banashankari 3rd Stage, Bengaluru, Karnataka 560085",
+    "phone": "+91-80-26725555",
+    "tags": { "fuel": "petrol_diesel_cng", "24x7": "yes" }
+  },
+  {
+    "id": "poi-blr-fuel-2",
+    "name": "Bharat Petroleum (BPCL) South End Circle",
+    "category": "PetrolStation",
+    "latitude": 12.9365,
+    "longitude": 77.5815,
+    "address": "RV Road, Jayanagar, Bengaluru, Karnataka 560011",
+    "phone": "+91-80-26567777",
+    "tags": { "fuel": "petrol_diesel", "air_service": "yes" }
+  },
+  {
+    "id": "poi-blr-police-1",
+    "name": "Banashankari Traffic Police Station",
+    "category": "Police",
+    "latitude": 12.9205,
+    "longitude": 77.5745,
+    "address": "Kanakapura Main Road, 2nd Stage, Banashankari, Bengaluru, Karnataka 560070",
+    "phone": "+91-80-22942475",
+    "tags": { "jurisdiction": "south_division", "emergency": "112" }
+  },
+  {
+    "id": "poi-blr-police-2",
+    "name": "Basavanagudi Police Station",
+    "category": "Police",
+    "latitude": 12.9430,
+    "longitude": 77.5750,
+    "address": "Kavi Lakshmisha Rd, Basavanagudi, Bengaluru, Karnataka 560004",
+    "phone": "+91-80-22942468",
+    "tags": { "jurisdiction": "south_division", "emergency": "112" }
+  }
+]

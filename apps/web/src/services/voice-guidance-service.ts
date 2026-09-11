@@ -11,6 +11,7 @@ import {
   type VoiceSettings,
   DEFAULT_VOICE_SETTINGS,
 } from '@navic/navigation-core';
+import { Logger } from '@navic/shared-models';
 import { androidBridgeService } from './android-bridge-service';
 import { tripRecoveryService } from './trip-recovery-service';
 
@@ -21,6 +22,7 @@ const STORAGE_KEY = 'navic_voice_settings';
 
 export class VoiceGuidanceService {
   private static instance: VoiceGuidanceService | null = null;
+  private logger = new Logger('VoiceGuidanceService');
 
   private settings: VoiceSettings;
   private audioCtx: AudioContext | null = null;
@@ -50,7 +52,7 @@ export class VoiceGuidanceService {
    */
   private initVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      console.warn('[VoiceGuidanceService] SpeechSynthesis API not supported in this environment');
+      this.logger.warn('SpeechSynthesis API not supported in this environment');
       return;
     }
 
@@ -113,7 +115,7 @@ export class VoiceGuidanceService {
 
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume().catch((err) => {
-        console.warn('[VoiceGuidanceService] AudioContext resume failed:', err);
+        this.logger.warn('AudioContext resume failed:', err);
       });
     }
 
@@ -160,7 +162,7 @@ export class VoiceGuidanceService {
         this.playTone(ctx, masterGain, 783.99, now + 0.10, 0.55);
       }
     } catch (err) {
-      console.warn('[VoiceGuidanceService] Error playing chime:', err);
+      this.logger.warn('Error playing chime:', err);
     }
   }
 
@@ -240,7 +242,7 @@ export class VoiceGuidanceService {
 
     utterance.onend = cleanup;
     utterance.onerror = (e) => {
-      console.warn('[VoiceGuidanceService] Speech error:', e);
+      this.logger.warn('Speech error:', e);
       cleanup();
     };
 
@@ -368,7 +370,7 @@ export class VoiceGuidanceService {
       try {
         l(isSpeaking, text);
       } catch (err) {
-        console.error('[VoiceGuidanceService] Speaking listener error:', err);
+        this.logger.error('Speaking listener error:', err);
       }
     }
   }
@@ -378,7 +380,7 @@ export class VoiceGuidanceService {
       try {
         l(this.getSettings());
       } catch (err) {
-        console.error('[VoiceGuidanceService] Settings listener error:', err);
+        this.logger.error('Settings listener error:', err);
       }
     }
   }

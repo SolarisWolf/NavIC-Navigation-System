@@ -132,6 +132,9 @@ export class AStarRouter {
       const currentId = openSet.pop();
       if (!currentId) break;
 
+      // Skip already-evaluated nodes (prevents duplicate entries from causing O(E log E) degradation)
+      if (closedSet.has(currentId)) continue;
+
       if (currentId === targetNodeId) {
         return this.reconstructPath(graph, cameFrom, targetNodeId, profile);
       }

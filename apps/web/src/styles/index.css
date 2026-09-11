@@ -509,40 +509,164 @@ input:focus, select:focus, textarea:focus {
   50% { box-shadow: 0 0 16px rgba(79, 140, 255, 0.25); }
 }
 
-/* ─── Responsive ──────────────────────────────────────────────────────────── */
+/* ─── Responsive & Mobile UI ──────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .sidebar {
-    width: var(--sidebar-collapsed);
+    display: none !important;
   }
 
-  .sidebar__label,
-  .sidebar__section-title,
-  .sidebar__footer {
-    display: none;
+  .app-layout {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
   }
 
-  .sidebar__item {
-    justify-content: center;
-    padding: var(--space-3);
+  .status-bar {
+    height: 44px;
+    padding: 0 10px;
   }
 
-  .sidebar__icon {
-    margin: 0;
+  .status-bar__left {
+    gap: 6px;
   }
 
-  .main-content {
-    padding: var(--space-4);
+  .status-bar__logo {
+    font-size: 15px;
+  }
+
+  .status-bar__logo-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
   }
 
   .status-bar__center {
-    display: none;
+    display: flex;
+    gap: 8px;
+  }
+
+  .status-bar__indicator {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  #ekf-indicator,
+  #nav-indicator,
+  #offline-indicator {
+    display: none !important;
+  }
+
+  .status-bar__right {
+    gap: 6px;
+  }
+
+  .status-bar__clock {
+    font-size: 11px;
+  }
+
+  .status-bar__sim-badge,
+  .status-bar__hardware-badge {
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+
+  .main-content {
+    padding: 12px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main-content:has(.map-screen) {
+    padding: 0 !important;
+    overflow: hidden !important;
   }
 }
 
+/* Enforce mobile layout on Android and mobile touch devices */
+body.is-mobile-ui .sidebar {
+  display: none !important;
+}
+
+body.is-mobile-ui .app-layout {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+body.is-mobile-ui .status-bar {
+  display: none !important;
+}
+
+body.is-mobile-ui .status-bar__left {
+  gap: 6px;
+}
+
+body.is-mobile-ui .status-bar__logo {
+  font-size: 15px;
+}
+
+body.is-mobile-ui .status-bar__logo-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+
+body.is-mobile-ui .status-bar__center {
+  display: flex;
+  gap: 8px;
+}
+
+body.is-mobile-ui .status-bar__indicator {
+  font-size: 11px;
+  gap: 4px;
+}
+
+body.is-mobile-ui #ekf-indicator,
+body.is-mobile-ui #nav-indicator,
+body.is-mobile-ui #offline-indicator {
+  display: none !important;
+}
+
+body.is-mobile-ui .status-bar__right {
+  gap: 6px;
+}
+
+body.is-mobile-ui .status-bar__clock {
+  font-size: 11px;
+}
+
+body.is-mobile-ui .status-bar__sim-badge,
+body.is-mobile-ui .status-bar__hardware-badge {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+body.is-mobile-ui .main-content {
+  padding: 12px;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+}
+
+body.is-mobile-ui .main-content:has(.map-screen) {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
 @media (max-width: 480px) {
+  .status-bar__clock {
+    display: none;
+  }
+
   .main-content {
-    padding: var(--space-3);
+    padding: 10px;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .main-content:has(.map-screen) {
+    padding: 0 !important;
   }
 }
 
@@ -565,7 +689,7 @@ body.power-saver-active .card {
 /* ─── Trip Recovery Banner (Phase 18) ─────────────────────────────────────── */
 .map-trip-recovery-banner {
   position: absolute;
-  top: 16px;
+  top: 72px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;

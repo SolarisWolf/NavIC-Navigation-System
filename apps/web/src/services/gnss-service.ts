@@ -6,7 +6,7 @@
  * to all UI subscribers.
  */
 
-import { type GNSSMeasurement, type SatelliteInfo, type NavICSignalReport, Constellation, FixType } from '@navic/shared-models';
+import { type GNSSMeasurement, type SatelliteInfo, type NavICSignalReport, Constellation, FixType, Logger } from '@navic/shared-models';
 import { GNSSSimulator, BrowserGeolocationProvider, SerialNMEAProvider, NavICDetector } from '@navic/gnss-core';
 import { androidBridgeService } from './android-bridge-service.js';
 
@@ -36,6 +36,7 @@ export interface ConstellationCounts {
 }
 
 class GNSSServiceImpl {
+  private logger = new Logger('GNSSService');
   private simulator: GNSSSimulator;
   private browserProvider: BrowserGeolocationProvider;
   private serialProvider: SerialNMEAProvider;
@@ -56,6 +57,11 @@ class GNSSServiceImpl {
 
     this.browserProvider = new BrowserGeolocationProvider();
     this.serialProvider = new SerialNMEAProvider();
+
+    if (androidBridgeService.isRunningInAndroid()) {
+      this.activeMode = DataSourceMode.AndroidHardware;
+      this.logger.info('Detected native Android environment — default source set to AndroidHardware');
+    }
 
     // Route simulator updates
     this.simulator.onMeasurement((m) => {
@@ -91,6 +97,15 @@ class GNSSServiceImpl {
         this.dispatchNavICReport(report);
       }
     });
+
+    // Automatically activate sensors when Android permissions are granted
+    if (typeof window !== 'undefined') {
+      window.addEventListener('android-permissions-granted', () => {
+        this.logger.info('Android location permissions granted — starting hardware sensors');
+        this.setSourceMode(DataSourceMode.AndroidHardware);
+        this.start();
+      });
+    }
   }
 
   private dispatchMeasurement(m: GNSSMeasurement): void {
@@ -99,7 +114,7 @@ class GNSSServiceImpl {
       try {
         listener(m);
       } catch (e) {
-        console.error('GNSS listener error:', e);
+        this.logger.error('GNSS listener error:', e);
       }
     }
 
@@ -117,7 +132,7 @@ class GNSSServiceImpl {
       try {
         listener(report);
       } catch (e) {
-        console.error('NavIC listener error:', e);
+        this.logger.error('NavIC listener error:', e);
       }
     }
   }
@@ -167,7 +182,7 @@ class GNSSServiceImpl {
   async setSourceMode(newMode: DataSourceMode): Promise<boolean> {
     if (this.activeMode === newMode) return true;
 
-    console.info(`[GNSSService] Switching source mode from ${this.activeMode} to ${newMode}`);
+    this.logger.info(`Switching source mode from ${this.activeMode} to ${newMode}`);
 
     // Stop current active provider if running
     if (this.isStarted) {
@@ -212,7 +227,7 @@ class GNSSServiceImpl {
       try {
         listener(newMode);
       } catch (e) {
-        console.error('Source mode listener error:', e);
+        this.logger.error('Source mode listener error:', e);
       }
     }
 
@@ -228,6 +243,9 @@ class GNSSServiceImpl {
 
   /** Start the currently active data source. */
   start(): void {
+    if (androidBridgeService.isRunningInAndroid() && this.activeMode === DataSourceMode.Simulation) {
+      this.activeMode = DataSourceMode.AndroidHardware;
+    }
     this.isStarted = true;
     switch (this.activeMode) {
       case DataSourceMode.Simulation:

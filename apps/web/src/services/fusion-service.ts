@@ -14,6 +14,7 @@ import {
   type SensorFusionStatusCallback,
   type AccelerometerReading,
   type GyroscopeReading,
+  Logger,
 } from '@navic/shared-models';
 import { SensorFusionEngine } from '@navic/sensor-fusion';
 import { gnssService } from './gnss-service.js';
@@ -21,6 +22,7 @@ import { imuService } from './imu-service.js';
 import { positionService } from './position-service.js';
 
 class FusionServiceImpl {
+  private logger = new Logger('FusionService');
   private engine: SensorFusionEngine;
   private latestEstimate: FusedPositionEstimate | null = null;
   private latestStatus: SensorFusionStatus | null = null;
@@ -41,7 +43,7 @@ class FusionServiceImpl {
         try {
           listener(estimate);
         } catch (e) {
-          console.error('Fusion estimate listener error:', e);
+          this.logger.error('Fusion estimate listener error:', e);
         }
       }
     });
@@ -52,7 +54,7 @@ class FusionServiceImpl {
         try {
           listener(status);
         } catch (e) {
-          console.error('Fusion status listener error:', e);
+          this.logger.error('Fusion status listener error:', e);
         }
       }
     });
@@ -84,6 +86,11 @@ class FusionServiceImpl {
 
     imuService.subscribeGyroscope((gyro) => {
       this.lastGyro = gyro;
+    });
+
+    // Reset EKF state when switching data sources
+    gnssService.onSourceModeChange(() => {
+      this.reset();
     });
   }
 
@@ -137,6 +144,10 @@ class FusionServiceImpl {
   }
 
   public reset(): void {
+    this.latestEstimate = null;
+    this.latestStatus = null;
+    this.lastAccel = null;
+    this.lastGyro = null;
     this.engine.reset();
   }
 }

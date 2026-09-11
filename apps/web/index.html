@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/src/styles/simulation.css" />
   <link rel="stylesheet" href="/src/styles/diagnostics.css" />
   <link rel="stylesheet" href="/src/styles/showcase.css" />
+  <link rel="stylesheet" href="/src/styles/technical-panel.css" />
 </head>
 <body>
   <div id="app">
@@ -30,12 +31,21 @@
     <header id="status-bar" class="status-bar"></header>
 
     <div class="app-layout">
-      <!-- Sidebar Navigation -->
+      <!-- Sidebar Navigation (Desktop) -->
       <nav id="sidebar" class="sidebar"></nav>
 
       <!-- Main Content Area -->
       <main id="main-content" class="main-content"></main>
+
+      <!-- Technical Split Panel ("The Wow Screen" - §16, §22, §30) -->
+      <aside id="technical-split-panel" class="technical-split-panel"></aside>
     </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav"></nav>
+
+    <!-- Destination Search Full-Screen Modal (§3, §4) -->
+    <div id="destination-search-modal" class="destination-search-modal"></div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

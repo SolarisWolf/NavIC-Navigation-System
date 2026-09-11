@@ -21,6 +21,7 @@ export class OutlierFilter {
   private lastCoordinate: Coordinate | null = null;
   private lastSpeedMs = 0;
   private lastTimestamp = 0;
+  private consecutiveRejections = 0;
 
   constructor(options?: {
     maxAccelerationMs2?: number;
@@ -36,20 +37,23 @@ export class OutlierFilter {
     this.lastCoordinate = null;
     this.lastSpeedMs = 0;
     this.lastTimestamp = 0;
+    this.consecutiveRejections = 0;
   }
 
   /**
    * Checks whether a new GNSS measurement represents an impossible physical jump.
    */
   public check(coord: Coordinate, speed: number, timestamp: number): OutlierCheckResult {
-    if (!this.lastCoordinate || this.lastTimestamp <= 0) {
+    // If consecutive measurements have diverged for 3 ticks, re-anchor to current fix
+    if (!this.lastCoordinate || this.lastTimestamp <= 0 || this.consecutiveRejections >= 3) {
       this.lastCoordinate = coord;
       this.lastSpeedMs = speed;
       this.lastTimestamp = timestamp;
+      this.consecutiveRejections = 0;
       return { isOutlier: false, impliedSpeedMs: speed };
     }
 
-    const dt = Math.max(0.01, (timestamp - this.lastTimestamp) / 1000.0);
+    const dt = Math.max(0.1, (timestamp - this.lastTimestamp) / 1000.0);
     const dist = haversineDistance(
       this.lastCoordinate.latitude,
       this.lastCoordinate.longitude,
@@ -58,35 +62,42 @@ export class OutlierFilter {
     );
     const impliedSpeed = dist / dt;
 
-    // Check 1: Excessive instantaneous jump
-    if (dist > this.maxJumpMeters * dt) {
-      return {
-        isOutlier: true,
-        reason: `Position jump (${dist.toFixed(1)}m in ${dt.toFixed(2)}s) exceeds max limit`,
-        impliedSpeedMs: impliedSpeed,
-      };
+    // Small position jitter (< 15m) is typical sensor noise or indoor multipath, not a vehicle jump
+    if (dist > 15.0) {
+      // Check 1: Excessive instantaneous jump
+      if (dist > this.maxJumpMeters * dt) {
+        this.consecutiveRejections++;
+        return {
+          isOutlier: true,
+          reason: `Position jump (${dist.toFixed(1)}m in ${dt.toFixed(2)}s) exceeds max limit`,
+          impliedSpeedMs: impliedSpeed,
+        };
+      }
+
+      // Check 2: Absolute speed bound
+      if (impliedSpeed > this.maxAbsoluteSpeedMs) {
+        this.consecutiveRejections++;
+        return {
+          isOutlier: true,
+          reason: `Implied speed (${impliedSpeed.toFixed(1)} m/s) exceeds physical vehicle limit`,
+          impliedSpeedMs: impliedSpeed,
+        };
+      }
+
+      // Check 3: Acceleration bound
+      const accel = Math.abs(impliedSpeed - this.lastSpeedMs) / Math.max(0.5, dt);
+      if (accel > this.maxAccelerationMs2 && dt <= 2.0) {
+        this.consecutiveRejections++;
+        return {
+          isOutlier: true,
+          reason: `Acceleration (${accel.toFixed(1)} m/s²) exceeds physical limits`,
+          impliedSpeedMs: impliedSpeed,
+        };
+      }
     }
 
-    // Check 2: Absolute speed bound
-    if (impliedSpeed > this.maxAbsoluteSpeedMs) {
-      return {
-        isOutlier: true,
-        reason: `Implied speed (${impliedSpeed.toFixed(1)} m/s) exceeds physical vehicle limit`,
-        impliedSpeedMs: impliedSpeed,
-      };
-    }
-
-    // Check 3: Acceleration bound
-    const accel = Math.abs(impliedSpeed - this.lastSpeedMs) / dt;
-    if (accel > this.maxAccelerationMs2 && dt <= 2.0) {
-      return {
-        isOutlier: true,
-        reason: `Acceleration (${accel.toFixed(1)} m/s²) exceeds physical limits`,
-        impliedSpeedMs: impliedSpeed,
-      };
-    }
-
-    // Valid measurement: update history
+    // Valid measurement: update history and reset rejection counter
+    this.consecutiveRejections = 0;
     this.lastCoordinate = coord;
     this.lastSpeedMs = speed;
     this.lastTimestamp = timestamp;

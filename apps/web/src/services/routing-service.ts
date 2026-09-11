@@ -11,6 +11,7 @@ import {
   RoutingProfile,
   RouteOptimization,
   type Coordinate,
+  Logger,
 } from '@navic/shared-models';
 import { OfflineRoutingEngine } from '@navic/routing-core';
 import { poiService } from './poi-service.js';
@@ -18,6 +19,7 @@ import { poiService } from './poi-service.js';
 export type RouteListener = (route: Route | null) => void;
 
 class RoutingServiceImpl {
+  private logger = new Logger('RoutingService');
   private engine: OfflineRoutingEngine;
   private currentRoute: Route | null = null;
   private activeProfile: RoutingProfile = RoutingProfile.Car;
@@ -96,7 +98,7 @@ class RoutingServiceImpl {
       this.notifyListeners(route);
       return route;
     } catch (e) {
-      console.error('Route calculation error:', e);
+      this.logger.error('Route calculation error:', e);
       throw e;
     }
   }
@@ -122,7 +124,7 @@ class RoutingServiceImpl {
       try {
         listener(route);
       } catch (e) {
-        console.error('Route listener error:', e);
+        this.logger.error('Route listener error:', e);
       }
     }
   }

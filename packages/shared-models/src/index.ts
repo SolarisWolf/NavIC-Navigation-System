@@ -140,3 +140,13 @@ export {
   DEFAULT_ANDROID_PLATFORM_SETTINGS,
 } from './trip-recovery.types';
 
+// ─── Math & Matrix Operations ───────────────────────────────────────────────
+export {
+  normalizeAngleRad,
+  normalizeAngleDeg,
+  matrixInverse,
+  invert4x4,
+} from './math';
+
+
+

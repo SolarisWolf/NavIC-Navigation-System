@@ -27,7 +27,8 @@ export class PositionEngine {
   private outlierFilter: OutlierFilter;
 
   // Configuration
-  private smoothingAlpha = 0.7; // 0.7 gives responsive tracking while rejecting micro-jitter
+  private smoothingAlpha = 0.7; // Fallback / base smoothing
+  private customSmoothingAlpha: number | null = null;
   private lossOfFixTimeoutMs = 1500;
   private stationarySpeedThresholdMs = 0.5;
 
@@ -40,11 +41,15 @@ export class PositionEngine {
   private lastSmoothedCoordinate: Coordinate | null = null;
   private lastStableBearing = 0;
   private lastMeasurementTime = 0;
-  private watchdogTimer: ReturnType<typeof setInterval> | null = null;
+  private watchdogTimeout: ReturnType<typeof setTimeout> | null = null;
   private hasFix = false;
+  private isDestroyed = false;
 
   constructor(config?: PositionEngineConfig) {
-    if (config?.smoothingFactor !== undefined) this.smoothingAlpha = config.smoothingFactor;
+    if (config?.smoothingFactor !== undefined) {
+      this.smoothingAlpha = config.smoothingFactor;
+      this.customSmoothingAlpha = config.smoothingFactor;
+    }
     if (config?.lossOfFixTimeoutMs !== undefined) this.lossOfFixTimeoutMs = config.lossOfFixTimeoutMs;
     if (config?.stationarySpeedThresholdMs !== undefined) {
       this.stationarySpeedThresholdMs = config.stationarySpeedThresholdMs;
@@ -53,20 +58,23 @@ export class PositionEngine {
     this.outlierFilter = new OutlierFilter({
       maxAccelerationMs2: config?.maxSpeedJumpMs ?? 35.0,
     });
-
-    this.startWatchdog();
   }
 
   public destroy(): void {
-    if (this.watchdogTimer) {
-      clearInterval(this.watchdogTimer);
-      this.watchdogTimer = null;
+    this.isDestroyed = true;
+    if (this.watchdogTimeout) {
+      clearTimeout(this.watchdogTimeout);
+      this.watchdogTimeout = null;
     }
     this.positionCallbacks = [];
     this.lossOfFixCallbacks = [];
   }
 
   public reset(): void {
+    if (this.watchdogTimeout) {
+      clearTimeout(this.watchdogTimeout);
+      this.watchdogTimeout = null;
+    }
     this.lastPosition = null;
     this.lastSmoothedCoordinate = null;
     this.lastStableBearing = 0;
@@ -116,6 +124,7 @@ export class PositionEngine {
     }
 
     this.hasFix = true;
+    this.scheduleWatchdog();
 
     // 1. Check for kinematic outlier jumps
     const rawCoord: Coordinate = {
@@ -135,8 +144,8 @@ export class PositionEngine {
       targetCoord = this.lastSmoothedCoordinate;
     }
 
-    // 2. Exponential smoothing of geographic coordinate
-    const smoothedCoord = this.applyCoordinateSmoothing(targetCoord);
+    // 2. Exponential smoothing of geographic coordinate with speed-adaptive alpha
+    const smoothedCoord = this.applyCoordinateSmoothing(targetCoord, m.speed);
 
     // 3. Stationary heading lock
     let finalBearing = m.bearing;
@@ -193,13 +202,17 @@ export class PositionEngine {
     return processedPos;
   }
 
-  private applyCoordinateSmoothing(target: Coordinate): Coordinate {
+  private applyCoordinateSmoothing(target: Coordinate, speed = 0): Coordinate {
     if (!this.lastSmoothedCoordinate) {
       this.lastSmoothedCoordinate = target;
       return target;
     }
 
-    const a = this.smoothingAlpha;
+    // Speed-adaptive alpha: higher speed -> more responsive (less lag on curves); low speed -> heavier smoothing (rejects jitter)
+    const a = this.customSmoothingAlpha !== null
+      ? this.customSmoothingAlpha
+      : Math.max(0.4, Math.min(0.95, 0.4 + speed * 0.02));
+
     const smoothed: Coordinate = {
       latitude: a * target.latitude + (1 - a) * this.lastSmoothedCoordinate.latitude,
       longitude: a * target.longitude + (1 - a) * this.lastSmoothedCoordinate.longitude,
@@ -232,15 +245,24 @@ export class PositionEngine {
     };
   }
 
-  private startWatchdog(): void {
-    this.watchdogTimer = setInterval(() => {
+  private scheduleWatchdog(): void {
+    if (this.isDestroyed) return;
+    if (this.watchdogTimeout) {
+      clearTimeout(this.watchdogTimeout);
+    }
+    this.watchdogTimeout = setTimeout(() => {
+      if (this.isDestroyed) return;
       if (this.hasFix && this.lastMeasurementTime > 0) {
         const elapsed = Date.now() - this.lastMeasurementTime;
         if (elapsed > this.lossOfFixTimeoutMs) {
           this.hasFix = false;
           this.logger.warn(`Loss of fix detected — no GNSS updates for ${elapsed}ms`);
           this.emitLossOfFix(this.lastMeasurementTime);
+          return;
         }
+      }
+      if (this.hasFix) {
+        this.scheduleWatchdog();
       }
     }, 500);
   }
@@ -250,7 +272,7 @@ export class PositionEngine {
       try {
         cb(pos);
       } catch (e) {
-        console.error('Position callback error:', e);
+        this.logger.error('Position callback error:', e);
       }
     }
   }
@@ -260,8 +282,9 @@ export class PositionEngine {
       try {
         cb(timestamp);
       } catch (e) {
-        console.error('Loss-of-fix callback error:', e);
+        this.logger.error('Loss-of-fix callback error:', e);
       }
     }
   }
 }
+

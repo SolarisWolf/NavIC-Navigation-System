@@ -462,3 +462,367 @@
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border-default);
 }
+
+/* ─── Mobile Bottom Navigation Bar ────────────────────────────────────────── */
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .mobile-bottom-nav {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(10, 15, 29, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(79, 140, 255, 0.2);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
+    z-index: 1200;
+    user-select: none;
+  }
+}
+
+body.is-mobile-ui .mobile-bottom-nav {
+  display: block !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(62px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(10, 15, 29, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(79, 140, 255, 0.2);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
+  z-index: 1200;
+  user-select: none;
+}
+
+.mobile-bottom-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 62px;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+}
+
+.mobile-bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  height: 100%;
+  color: #8892a4;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  padding: 6px 0;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav__item:active {
+  transform: scale(0.92);
+}
+
+.mobile-bottom-nav__icon {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform var(--transition-fast);
+}
+
+.mobile-bottom-nav__label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color var(--transition-fast);
+}
+
+.mobile-bottom-nav__item--active {
+  color: #4f8cff;
+}
+
+.mobile-bottom-nav__item--active .mobile-bottom-nav__icon {
+  transform: translateY(-2px) scale(1.12);
+}
+
+.mobile-bottom-nav__item--active .mobile-bottom-nav__label {
+  color: #fff;
+  font-weight: 700;
+}
+
+.mobile-bottom-nav__indicator {
+  position: absolute;
+  bottom: 4px;
+  width: 18px;
+  height: 3px;
+  background: linear-gradient(90deg, #4f8cff, #00e676);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(79, 140, 255, 0.6);
+}
+
+/* ─── GNSS Quality Overlay Pill & Drawer (Specification §6) ────────────────── */
+.gnss-pill-wrapper {
+  position: absolute;
+  top: 68px;
+  right: 12px;
+  z-index: 1001;
+  pointer-events: auto !important;
+}
+
+.gnss-quality-pill {
+  display: inline-flex;
+  pointer-events: auto !important;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 17, 23, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  transition: all 0.2s ease;
+}
+
+.gnss-quality-pill:hover {
+  background: rgba(22, 27, 34, 0.95);
+  border-color: rgba(0, 229, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.gnss-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gnss-dot--active {
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676;
+}
+
+.gnss-dot--idle {
+  background: #ffb300;
+  box-shadow: 0 0 8px #ffb300;
+}
+
+.gnss-pill-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.gnss-pill-badge--sim {
+  background: rgba(255, 179, 0, 0.2);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+}
+
+.gnss-pill-badge--hardware {
+  background: rgba(0, 230, 118, 0.2);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.4);
+}
+
+/* Expanded GNSS Status Drawer */
+.gnss-drawer {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 310px;
+  background: rgba(13, 17, 23, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  padding: 14px;
+  animation: drawer-fade-down 0.2s ease-out;
+}
+
+@keyframes drawer-fade-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gnss-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.gnss-drawer__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gnss-drawer__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.gnss-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gnss-metric-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.gnss-metric-lbl {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.gnss-metric-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.gnss-val--accent {
+  color: #00e5ff;
+}
+
+.gnss-drawer__section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin: 10px 0 6px 0;
+}
+
+.gnss-drawer__badge {
+  color: #00e676;
+  font-size: 10px;
+}
+
+.gnss-constellation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.gnss-constellation-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.gnss-constellation-row--navic {
+  background: rgba(255, 153, 51, 0.12);
+  border: 1px solid rgba(255, 153, 51, 0.35);
+  font-weight: 700;
+}
+
+.gnss-constellation-row--navic .const-name {
+  color: #ff9933;
+}
+
+.gnss-constellation-row--navic .const-count {
+  color: #ff9933;
+  font-weight: 800;
+}
+
+.gnss-dop-row {
+  display: flex;
+  justify-content: space-around;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+}
+
+.gnss-dop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dop-lbl {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.dop-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.gnss-source-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffb300;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+.gnss-source-indicator.source--hardware {
+  color: #00e676;
+}
+
+.gnss-full-view-btn {
+  width: 100%;
+  font-size: 11px;
+  text-align: center;
+  justify-content: center;
+}
+
+
+

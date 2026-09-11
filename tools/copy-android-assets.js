@@ -54,7 +54,16 @@ if (fs.existsSync(WEB_DIST_DIR)) {
 if (fs.existsSync(SOURCE_POI_FILE)) {
   if (!fs.existsSync(TARGET_POI_DIR)) fs.mkdirSync(TARGET_POI_DIR, { recursive: true });
   fs.copyFileSync(SOURCE_POI_FILE, path.join(TARGET_POI_DIR, 'delhi-poi.json'));
-  console.log(`[AndroidAssets] Copied POI database to ${TARGET_POI_DIR}`);
+  
+  const allPoi = path.resolve(ROOT_DIR, 'data/poi/all-india-poi.json');
+  if (fs.existsSync(allPoi)) {
+    fs.copyFileSync(allPoi, path.join(TARGET_POI_DIR, 'all-india-poi.json'));
+  }
+  const blrPoi = path.resolve(ROOT_DIR, 'data/poi/bangalore-poi.json');
+  if (fs.existsSync(blrPoi)) {
+    fs.copyFileSync(blrPoi, path.join(TARGET_POI_DIR, 'bangalore-poi.json'));
+  }
+  console.log(`[AndroidAssets] Copied POI databases to ${TARGET_POI_DIR}`);
 }
 
 // 3. Setup Maps Directory

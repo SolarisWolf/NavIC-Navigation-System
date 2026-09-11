@@ -14,6 +14,8 @@ export {
 } from './graph/road-graph.js';
 
 export { buildDelhiRoadGraph } from './graph/delhi-network.js';
+export { buildBangaloreRoadGraph } from './graph/bangalore-network.js';
+export { buildCompositeIndiaRoadGraph } from './graph/composite-network.js';
 
 // Algorithms & Engine
 export { AStarRouter, type AStarResult } from './engine/astar-router.js';

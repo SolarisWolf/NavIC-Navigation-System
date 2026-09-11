@@ -4,6 +4,10 @@
  * 7-State Kinematic Extended Kalman Filter fusing 50 Hz IMU predictions
  * with 1 Hz GNSS measurement updates.
  *
+ * Fully pre-allocated Float64Array-backed matrices for zero garbage collection
+ * overhead during continuous 50 Hz navigation cycles.
+ * Numerically stabilized using the Joseph-form covariance measurement update.
+ *
  * State Vector:
  *   x[0] = East position (meters in local ENU)
  *   x[1] = North position (meters in local ENU)
@@ -15,18 +19,11 @@
  */
 
 import {
-  Matrix,
-  Vector,
-  createMatrix,
-  identityMatrix,
-  matrixAdd,
-  matrixSub,
-  matrixMultiply,
-  matrixTranspose,
-  matrixMultiplyVector,
-  matrixInverse,
+  Float64Matrix,
   normalizeAngleRad,
   normalizeAngleDeg,
+  type Matrix,
+  type Vector,
 } from '../math/matrix.js';
 
 export interface EKFState {
@@ -54,10 +51,10 @@ export interface GNSSObservation {
 
 export class ExtendedKalmanFilter {
   // 7-element state vector
-  private x: Vector = [0, 0, 0, 0, 0, 0, 0];
+  private x: Float64Array = new Float64Array(7);
 
   // 7x7 error covariance matrix
-  private P: Matrix = identityMatrix(7);
+  private P: Float64Matrix = new Float64Matrix(7, 7);
 
   // Process noise parameters
   private qPos = 0.05;      // Position noise (m²/s)
@@ -68,8 +65,49 @@ export class ExtendedKalmanFilter {
 
   private isInitialized = false;
   private lastLatencyMs = 0;
+  private predictCycleCount = 0;
+
+  // ─── Pre-allocated Scratch Buffers (Predict Step) ──────────────────────────
+  private F: Float64Matrix = new Float64Matrix(7, 7);
+  private Q: Float64Matrix = new Float64Matrix(7, 7);
+  private bufFP: Float64Matrix = new Float64Matrix(7, 7);
+  private bufFT: Float64Matrix = new Float64Matrix(7, 7);
+  private bufFPFT: Float64Matrix = new Float64Matrix(7, 7);
+
+  // ─── Pre-allocated Scratch Buffers (Update Step & Joseph Form) ─────────────
+  private H: Float64Matrix = new Float64Matrix(5, 7);
+  private bufHT: Float64Matrix = new Float64Matrix(7, 5);
+  private R: Float64Matrix = new Float64Matrix(5, 5);
+  private bufHP: Float64Matrix = new Float64Matrix(5, 7);
+  private bufHPHT: Float64Matrix = new Float64Matrix(5, 5);
+  private bufS: Float64Matrix = new Float64Matrix(5, 5);
+  private bufSInv: Float64Matrix = new Float64Matrix(5, 5);
+  private augScratch: Float64Array = new Float64Array(5 * 10);
+  private bufPHT: Float64Matrix = new Float64Matrix(7, 5);
+  private bufK: Float64Matrix = new Float64Matrix(7, 5);
+  private bufKT: Float64Matrix = new Float64Matrix(5, 7);
+  private bufKy: Float64Array = new Float64Array(7);
+  private y: Float64Array = new Float64Array(5);
+
+  // Joseph-form matrices: P = (I - KH) P (I - KH)^T + K R K^T
+  private I7: Float64Matrix = new Float64Matrix(7, 7);
+  private bufKH: Float64Matrix = new Float64Matrix(7, 7);
+  private bufIKH: Float64Matrix = new Float64Matrix(7, 7);
+  private bufIKHT: Float64Matrix = new Float64Matrix(7, 7);
+  private bufIKH_P: Float64Matrix = new Float64Matrix(7, 7);
+  private bufTerm1: Float64Matrix = new Float64Matrix(7, 7);
+  private bufKR: Float64Matrix = new Float64Matrix(7, 5);
+  private bufTerm2: Float64Matrix = new Float64Matrix(7, 7);
 
   constructor() {
+    this.I7.setIdentity();
+    // Observation matrix H: directly measures East, North, Up, Speed, Bearing
+    this.H.setZero();
+    this.H.set(0, 0, 1.0);
+    this.H.set(1, 1, 1.0);
+    this.H.set(2, 2, 1.0);
+    this.H.set(3, 3, 1.0);
+    this.H.set(4, 4, 1.0);
     this.reset();
   }
 
@@ -77,20 +115,21 @@ export class ExtendedKalmanFilter {
    * Resets the filter to initial state.
    */
   public reset(): void {
-    this.x = [0, 0, 0, 0, 0, 0, 0];
-    this.P = identityMatrix(7);
+    this.x.fill(0);
+    this.P.setIdentity();
 
     // Initial uncertainty
-    this.P[0][0] = 25.0; // East pos (5m std)
-    this.P[1][1] = 25.0; // North pos (5m std)
-    this.P[2][2] = 25.0; // Up pos (5m std)
-    this.P[3][3] = 4.0;  // Velocity (2 m/s std)
-    this.P[4][4] = 0.2;  // Heading (~25 deg std)
-    this.P[5][5] = 0.5;  // Accel bias
-    this.P[6][6] = 0.05; // Gyro bias
+    this.P.set(0, 0, 25.0); // East pos (5m std)
+    this.P.set(1, 1, 25.0); // North pos (5m std)
+    this.P.set(2, 2, 25.0); // Up pos (5m std)
+    this.P.set(3, 3, 4.0);  // Velocity (2 m/s std)
+    this.P.set(4, 4, 0.2);  // Heading (~25 deg std)
+    this.P.set(5, 5, 0.5);  // Accel bias
+    this.P.set(6, 6, 0.05); // Gyro bias
 
     this.isInitialized = false;
     this.lastLatencyMs = 0;
+    this.predictCycleCount = 0;
   }
 
   /**
@@ -106,16 +145,17 @@ export class ExtendedKalmanFilter {
     this.x[6] = 0;
 
     // Reset covariance
-    this.P = identityMatrix(7);
-    this.P[0][0] = 9.0;
-    this.P[1][1] = 9.0;
-    this.P[2][2] = 9.0;
-    this.P[3][3] = 1.0;
-    this.P[4][4] = 0.05;
-    this.P[5][5] = 0.1;
-    this.P[6][6] = 0.01;
+    this.P.setIdentity();
+    this.P.set(0, 0, 9.0);
+    this.P.set(1, 1, 9.0);
+    this.P.set(2, 2, 9.0);
+    this.P.set(3, 3, 1.0);
+    this.P.set(4, 4, 0.05);
+    this.P.set(5, 5, 0.1);
+    this.P.set(6, 6, 0.01);
 
     this.isInitialized = true;
+    this.predictCycleCount = 0;
   }
 
   public get initialized(): boolean {
@@ -162,58 +202,65 @@ export class ExtendedKalmanFilter {
     this.x[4] = thetaNew;
 
     // 3. State Transition Jacobian Matrix F (7x7)
-    const F = identityMatrix(7);
+    this.F.setIdentity();
     const sinTheta = Math.sin(avgTheta);
     const cosTheta = Math.cos(avgTheta);
 
     // d(pE)/dv
-    F[0][3] = sinTheta * dt;
+    this.F.set(0, 3, sinTheta * dt);
     // d(pE)/d(theta)
-    F[0][4] = avgVel * cosTheta * dt;
+    this.F.set(0, 4, avgVel * cosTheta * dt);
     // d(pE)/d(accelBias)
-    F[0][5] = -0.5 * sinTheta * dt * dt;
+    this.F.set(0, 5, -0.5 * sinTheta * dt * dt);
     // d(pE)/d(gyroBias)
-    F[0][6] = -0.5 * avgVel * cosTheta * dt * dt;
+    this.F.set(0, 6, -0.5 * avgVel * cosTheta * dt * dt);
 
     // d(pN)/dv
-    F[1][3] = cosTheta * dt;
+    this.F.set(1, 3, cosTheta * dt);
     // d(pN)/d(theta)
-    F[1][4] = -avgVel * sinTheta * dt;
+    this.F.set(1, 4, -avgVel * sinTheta * dt);
     // d(pN)/d(accelBias)
-    F[1][5] = -0.5 * cosTheta * dt * dt;
+    this.F.set(1, 5, -0.5 * cosTheta * dt * dt);
     // d(pN)/d(gyroBias)
-    F[1][6] = 0.5 * avgVel * sinTheta * dt * dt;
+    this.F.set(1, 6, 0.5 * avgVel * sinTheta * dt * dt);
 
     // d(v)/d(accelBias)
-    F[3][5] = -dt;
+    this.F.set(3, 5, -dt);
 
     // d(theta)/d(gyroBias)
-    F[4][6] = -dt;
+    this.F.set(4, 6, -dt);
 
     // 4. Process Noise Matrix Q (7x7)
-    const Q = createMatrix(7, 7, 0);
-    Q[0][0] = this.qPos * dt;
-    Q[1][1] = this.qPos * dt;
-    Q[2][2] = this.qPos * dt;
-    Q[3][3] = this.qVel * dt;
-    Q[4][4] = this.qHeading * dt;
-    Q[5][5] = this.qAccelBias * dt;
-    Q[6][6] = this.qGyroBias * dt;
+    this.Q.setZero();
+    this.Q.set(0, 0, this.qPos * dt);
+    this.Q.set(1, 1, this.qPos * dt);
+    this.Q.set(2, 2, this.qPos * dt);
+    this.Q.set(3, 3, this.qVel * dt);
+    this.Q.set(4, 4, this.qHeading * dt);
+    this.Q.set(5, 5, this.qAccelBias * dt);
+    this.Q.set(6, 6, this.qGyroBias * dt);
 
     // 5. Covariance propagation: P = F * P * F^T + Q
-    const FP = matrixMultiply(F, this.P);
-    const FT = matrixTranspose(F);
-    const FPFT = matrixMultiply(FP, FT);
-    this.P = matrixAdd(FPFT, Q);
+    Float64Matrix.multiply(this.F, this.P, this.bufFP);
+    Float64Matrix.transpose(this.F, this.bufFT);
+    Float64Matrix.multiply(this.bufFP, this.bufFT, this.bufFPFT);
+    Float64Matrix.add(this.bufFPFT, this.Q, this.P);
 
-    // Symmetrize P
-    this.symmetrizeP();
+    // Batched symmetrization: only symmetrize every 50 cycles (1s) during high-frequency prediction
+    // Full symmetrization is always performed during updateGNSS
+    this.predictCycleCount++;
+    if (this.predictCycleCount >= 50) {
+      Float64Matrix.symmetrize(this.P);
+      this.predictCycleCount = 0;
+    }
 
     this.lastLatencyMs = performance.now() - t0;
   }
 
   /**
    * Measurement update step driven by GNSS position fix (typically 1 Hz).
+   * Uses numerically stable Joseph-form covariance update:
+   * P = (I - K*H) * P * (I - K*H)^T + K * R * K^T
    *
    * @param obs GNSS observation transformed to local ENU.
    */
@@ -225,75 +272,67 @@ export class ExtendedKalmanFilter {
       return;
     }
 
-    // Measurement Vector z (5 elements: [east, north, up, speed, bearing])
-    const z: Vector = [
-      obs.east,
-      obs.north,
-      obs.up,
-      obs.speed,
-      obs.bearingRad,
-    ];
-
-    // Observation Matrix H (5x7)
-    // Directly observes: x[0]=pE, x[1]=pN, x[2]=pU, x[3]=v, x[4]=theta
-    const H = createMatrix(5, 7, 0);
-    H[0][0] = 1;
-    H[1][1] = 1;
-    H[2][2] = 1;
-    H[3][3] = 1;
-    H[4][4] = 1;
-
     // Measurement Covariance Matrix R (5x5)
-    const R = createMatrix(5, 5, 0);
+    this.R.setZero();
     const posVar = Math.max(0.5, obs.horizontalAccuracy * obs.horizontalAccuracy);
     const vertVar = Math.max(1.0, obs.verticalAccuracy * obs.verticalAccuracy);
-    R[0][0] = posVar;
-    R[1][1] = posVar;
-    R[2][2] = vertVar;
-    R[3][3] = 0.25; // 0.5 m/s speed std dev
+    this.R.set(0, 0, posVar);
+    this.R.set(1, 1, posVar);
+    this.R.set(2, 2, vertVar);
+    this.R.set(3, 3, 0.25); // 0.5 m/s speed std dev
 
     // Bearing variance is high if stationary, low if moving
     if (this.x[3] < 0.5 && obs.speed < 0.5) {
-      R[4][4] = 100.0; // High uncertainty on bearing when stopped
+      this.R.set(4, 4, 100.0); // High uncertainty on bearing when stopped
     } else {
-      R[4][4] = 0.03; // ~10 deg std dev (0.17 rad)
+      this.R.set(4, 4, 0.03); // ~10 deg std dev (0.17 rad)
     }
 
     // Innovation residual y = z - H*x
-    const y: Vector = [
-      z[0] - this.x[0],
-      z[1] - this.x[1],
-      z[2] - this.x[2],
-      z[3] - this.x[3],
-      normalizeAngleRad(z[4] - this.x[4]), // Wrapped angle residual
-    ];
+    this.y[0] = obs.east - this.x[0];
+    this.y[1] = obs.north - this.x[1];
+    this.y[2] = obs.up - this.x[2];
+    this.y[3] = obs.speed - this.x[3];
+    this.y[4] = normalizeAngleRad(obs.bearingRad - this.x[4]); // Wrapped angle residual
 
     // Innovation covariance S = H * P * H^T + R (5x5)
-    const HP = matrixMultiply(H, this.P);
-    const HT = matrixTranspose(H);
-    const HPHT = matrixMultiply(HP, HT);
-    const S = matrixAdd(HPHT, R);
+    Float64Matrix.multiply(this.H, this.P, this.bufHP);
+    Float64Matrix.transpose(this.H, this.bufHT);
+    Float64Matrix.multiply(this.bufHP, this.bufHT, this.bufHPHT);
+    Float64Matrix.add(this.bufHPHT, this.R, this.bufS);
 
     // Kalman Gain K = P * H^T * S^-1 (7x5)
-    const SInv = matrixInverse(S);
-    const PHT = matrixMultiply(this.P, HT);
-    const K = matrixMultiply(PHT, SInv);
+    Float64Matrix.invert(this.bufS, this.bufSInv, this.augScratch);
+    Float64Matrix.multiply(this.P, this.bufHT, this.bufPHT);
+    Float64Matrix.multiply(this.bufPHT, this.bufSInv, this.bufK);
 
     // State update x = x + K * y
-    const Ky = matrixMultiplyVector(K, y);
+    Float64Matrix.multiplyVector(this.bufK, this.y, this.bufKy);
     for (let i = 0; i < 7; i++) {
-      this.x[i] += Ky[i];
+      this.x[i] += this.bufKy[i];
     }
     this.x[3] = Math.max(0, this.x[3]); // velocity >= 0
     this.x[4] = normalizeAngleRad(this.x[4]); // wrap heading
 
-    // Covariance update P = (I - K * H) * P
-    const I7 = identityMatrix(7);
-    const KH = matrixMultiply(K, H);
-    const I_minus_KH = matrixSub(I7, KH);
-    this.P = matrixMultiply(I_minus_KH, this.P);
+    // Joseph-form covariance update:
+    // P = (I - K*H) * P * (I - K*H)^T + K * R * K^T
+    // Term 1: (I - KH) * P * (I - KH)^T
+    Float64Matrix.multiply(this.bufK, this.H, this.bufKH);
+    Float64Matrix.sub(this.I7, this.bufKH, this.bufIKH);
+    Float64Matrix.transpose(this.bufIKH, this.bufIKHT);
+    Float64Matrix.multiply(this.bufIKH, this.P, this.bufIKH_P);
+    Float64Matrix.multiply(this.bufIKH_P, this.bufIKHT, this.bufTerm1);
 
-    this.symmetrizeP();
+    // Term 2: K * R * K^T
+    Float64Matrix.transpose(this.bufK, this.bufKT);
+    Float64Matrix.multiply(this.bufK, this.R, this.bufKR);
+    Float64Matrix.multiply(this.bufKR, this.bufKT, this.bufTerm2);
+
+    // P = Term 1 + Term 2
+    Float64Matrix.add(this.bufTerm1, this.bufTerm2, this.P);
+
+    // Symmetrize P to maintain positive semi-definiteness
+    Float64Matrix.symmetrize(this.P);
 
     this.lastLatencyMs = performance.now() - t0;
   }
@@ -303,10 +342,10 @@ export class ExtendedKalmanFilter {
    */
   public getState(): EKFState {
     const bearingRad = this.x[4];
-    let bearingDeg = normalizeAngleDeg((bearingRad * 180.0) / Math.PI);
+    const bearingDeg = normalizeAngleDeg((bearingRad * 180.0) / Math.PI);
 
     // Position uncertainty 1-sigma radius: sqrt(P[0][0] + P[1][1])
-    const accuracy = Math.sqrt(Math.max(0, this.P[0][0]) + Math.max(0, this.P[1][1]));
+    const accuracy = Math.sqrt(Math.max(0, this.P.get(0, 0)) + Math.max(0, this.P.get(1, 1)));
 
     return {
       east: this.x[0],
@@ -327,30 +366,21 @@ export class ExtendedKalmanFilter {
    * Useful for uncertainty telemetry, sanity checks, and stress diagnostics.
    */
   public getCovarianceDiagonal(): number[] {
-    return this.P.map((row, i) => row[i]);
+    return [
+      this.P.get(0, 0),
+      this.P.get(1, 1),
+      this.P.get(2, 2),
+      this.P.get(3, 3),
+      this.P.get(4, 4),
+      this.P.get(5, 5),
+      this.P.get(6, 6),
+    ];
   }
 
   /**
-   * Returns a copy of the 7x7 covariance matrix P.
+   * Returns a copy of the 7x7 covariance matrix P as a 2D array.
    */
   public getCovariance(): Matrix {
-    return this.P.map(row => [...row]);
-  }
-
-  /**
-   * Symmetrizes the error covariance matrix P to maintain numerical stability.
-   */
-  private symmetrizeP(): void {
-    for (let i = 0; i < 7; i++) {
-      for (let j = i + 1; j < 7; j++) {
-        const val = 0.5 * (this.P[i][j] + this.P[j][i]);
-        this.P[i][j] = val;
-        this.P[j][i] = val;
-      }
-      // Ensure positive diagonal
-      if (this.P[i][i] < 1e-9) {
-        this.P[i][i] = 1e-9;
-      }
-    }
+    return this.P.to2DArray();
   }
 }

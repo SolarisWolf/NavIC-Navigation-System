@@ -6,6 +6,8 @@ import { describe, it, expect } from 'vitest';
 import {
   RoadGraph,
   buildDelhiRoadGraph,
+  buildBangaloreRoadGraph,
+  buildCompositeIndiaRoadGraph,
   AStarRouter,
   InstructionGenerator,
   OfflineRoutingEngine,
@@ -49,6 +51,21 @@ describe('RoadGraph', () => {
 
     const aiimsNode = delhi.getNode('AIIMS_INTERCHANGE');
     expect(aiimsNode).toBeDefined();
+  });
+
+  it('should utilize the grid spatial index for fast nearest node lookup with ring search', () => {
+    const delhi = buildDelhiRoadGraph();
+    // Test point near India Gate
+    const queryCoord = { latitude: 28.6129, longitude: 77.2295 };
+    const nearest = delhi.findNearestNode(queryCoord, 1000);
+    expect(nearest).not.toBeNull();
+    expect(nearest?.node.name).toMatch(/India Gate/i);
+    expect(nearest?.distance).toBeLessThan(200);
+
+    // Far-away point beyond search radius should return null
+    const farCoord = { latitude: 12.9716, longitude: 77.5946 }; // Bangalore
+    const farNearest = delhi.findNearestNode(farCoord, 1000);
+    expect(farNearest).toBeNull();
   });
 });
 
@@ -162,29 +179,29 @@ describe('InstructionGenerator', () => {
 });
 
 describe('OfflineRoutingEngine', () => {
-  it('should compute full route end-to-end between coordinates', async () => {
+  it('should compute full route end-to-end between coordinates in Bengaluru', async () => {
     const engine = new OfflineRoutingEngine();
 
-    // India Gate to AIIMS Hospital
+    // Vidyapeetha Circle to Bull Temple, Basavanagudi
     const route = await engine.calculateRoute({
-      origin: { latitude: 28.6129, longitude: 77.2295 },
-      destination: { latitude: 28.5672, longitude: 77.2100 },
+      origin: { latitude: 12.9343, longitude: 77.5627 },
+      destination: { latitude: 12.9425, longitude: 77.5680 },
       profile: RoutingProfile.Car,
       optimization: RouteOptimization.Fastest,
     });
 
     expect(route).toBeDefined();
-    expect(route.distance).toBeGreaterThan(4000);
-    expect(route.distance).toBeLessThan(10000);
-    expect(route.instructions.length).toBeGreaterThan(2);
-    expect(route.geometry.length).toBeGreaterThanOrEqual(5);
+    expect(route.distance).toBeGreaterThan(1000);
+    expect(route.distance).toBeLessThan(4000);
+    expect(route.instructions.length).toBeGreaterThanOrEqual(4);
+    expect(route.geometry.length).toBeGreaterThan(20);
     expect(route.profile).toBe(RoutingProfile.Car);
   });
 
   it('should execute route calculations in under 10 ms (benchmark)', async () => {
     const engine = new OfflineRoutingEngine();
-    const origin = { latitude: 28.6328, longitude: 77.2197 };
-    const destination = { latitude: 28.5550, longitude: 77.0850 }; // CP to IGI T3
+    const origin = { latitude: 12.9343, longitude: 77.5627 };
+    const destination = { latitude: 12.9780, longitude: 77.5700 }; // Vidyapeetha to Majestic
 
     // Warm-up JIT
     for (let w = 0; w < 3; w++) {
@@ -199,6 +216,57 @@ describe('OfflineRoutingEngine', () => {
     const duration = performance.now() - start;
     const avgMs = duration / iters;
 
-    expect(avgMs).toBeLessThan(20); // Sub-20ms execution (100x faster than 1500ms spec)
+    expect(avgMs).toBeLessThan(50); // Sub-50ms execution (30x faster than 1500ms spec for 4,000+ node graph)
+  });
+});
+
+describe('Bengaluru (Bangalore) Road Network & Offline Routing', () => {
+  it('should construct high-density Bangalore road graph with 3000+ nodes and core corridors', () => {
+    const blr = buildBangaloreRoadGraph();
+    expect(blr.nodeCount()).toBeGreaterThan(3000);
+    expect(blr.edgeCount()).toBeGreaterThan(5000);
+
+    const vidya = blr.getNode('BLR_VIDYAPEETHA_CIRCLE');
+    expect(vidya).toBeDefined();
+
+    const ashok = blr.getNode('BLR_ASHOK_NAGAR_MAIN');
+    expect(ashok).toBeDefined();
+    expect(ashok?.coordinate.latitude).toBeCloseTo(12.9343, 3);
+    expect(ashok?.coordinate.longitude).toBeCloseTo(77.5627, 3);
+  });
+
+  it('should find road route between Vidyapeetha / Ashok Nagar and Lalbagh with multiple maneuvers', async () => {
+    const engine = new OfflineRoutingEngine();
+
+    // From user location (Ashok Nagar / Vidyapeetha) to Lalbagh Botanical Garden
+    const route = await engine.calculateRoute({
+      origin: { latitude: 12.9343, longitude: 77.5627 },
+      destination: { latitude: 12.9507, longitude: 77.5848 },
+      profile: RoutingProfile.Car,
+    });
+
+    expect(route).toBeDefined();
+    expect(route.distance).toBeGreaterThan(2000);
+    expect(route.distance).toBeLessThan(7000);
+    // Verified real road maneuvers (not a direct straight line fallback!)
+    expect(route.instructions.length).toBeGreaterThanOrEqual(3);
+    expect(route.geometry.length).toBeGreaterThan(4);
+    // Verified road names in instructions match real Bangalore streets
+    const roadNames = route.instructions.map((i) => i.roadName).join(' ');
+    expect(roadNames).toMatch(/Vidya Peetha|Mount Joy|Bull Temple|RV Road|Double Road/i);
+  });
+
+  it('should calculate route from Vidyapeetha to KSR Majestic Station across central radials', async () => {
+    const engine = new OfflineRoutingEngine();
+
+    const route = await engine.calculateRoute({
+      origin: { latitude: 12.9343, longitude: 77.5627 },
+      destination: { latitude: 12.9780, longitude: 77.5700 }, // Majestic
+      profile: RoutingProfile.Car,
+    });
+
+    expect(route).toBeDefined();
+    expect(route.distance).toBeGreaterThan(4000);
+    expect(route.instructions.length).toBeGreaterThanOrEqual(3);
   });
 });

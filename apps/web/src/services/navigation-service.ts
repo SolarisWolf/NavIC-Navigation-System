@@ -14,6 +14,7 @@ import {
   type NavigationInstruction,
   type ActiveTripState,
   NavigationMode,
+  Logger,
 } from '@navic/shared-models';
 import {
   NavigationEngine,
@@ -37,6 +38,7 @@ import { androidBridgeService } from './android-bridge-service.js';
 import { tripRecoveryService } from './trip-recovery-service.js';
 
 class NavigationServiceImpl {
+  private logger = new Logger('NavigationService');
   private engine: NavigationEngine;
   private reroutingManager: ReroutingManager;
   private voiceGenerator: VoicePromptGenerator;
@@ -107,7 +109,7 @@ class NavigationServiceImpl {
         try {
           listener(state);
         } catch (e) {
-          console.error('[NavigationService] Error in state listener', e);
+          this.logger.error('Error in state listener', e);
         }
       }
     });
@@ -117,7 +119,7 @@ class NavigationServiceImpl {
         try {
           listener(instruction, proximity);
         } catch (e) {
-          console.error('[NavigationService] Error in maneuver listener', e);
+          this.logger.error('Error in maneuver listener', e);
         }
       }
     });
@@ -133,7 +135,7 @@ class NavigationServiceImpl {
         try {
           listener(status);
         } catch (e) {
-          console.error('[NavigationService] Error in offRoute listener', e);
+          this.logger.error('Error in offRoute listener', e);
         }
       }
     });
@@ -149,7 +151,7 @@ class NavigationServiceImpl {
         try {
           listener(dest);
         } catch (e) {
-          console.error('[NavigationService] Error in arrival listener', e);
+          this.logger.error('Error in arrival listener', e);
         }
       }
     });
@@ -160,7 +162,7 @@ class NavigationServiceImpl {
         try {
           listener();
         } catch (e) {
-          console.error('[NavigationService] Error in onRerouteStarted listener', e);
+          this.logger.error('Error in onRerouteStarted listener', e);
         }
       }
     });
@@ -172,7 +174,7 @@ class NavigationServiceImpl {
         try {
           listener(newRoute);
         } catch (e) {
-          console.error('[NavigationService] Error in onRerouteSuccess listener', e);
+          this.logger.error('Error in onRerouteSuccess listener', e);
         }
       }
     });
@@ -182,7 +184,7 @@ class NavigationServiceImpl {
         try {
           listener(error);
         } catch (e) {
-          console.error('[NavigationService] Error in onRerouteFailed listener', e);
+          this.logger.error('Error in onRerouteFailed listener', e);
         }
       }
     });

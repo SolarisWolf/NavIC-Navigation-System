@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         val coarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
 
         if (fineLocation || coarseLocation) {
+            bridge.startHardwareSensors()
             // Permissions granted; notify WebView
             binding.webView.evaluateJavascript(
                 "window.dispatchEvent(new CustomEvent('android-permissions-granted'));",
@@ -56,14 +57,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Setup Native Bridge first
+        setupNativeBridge()
+
         // Parse any incoming Geo URI launch intent
         handleIntent(intent)
 
-        // Request Location Permissions
+        // Request Location Permissions and auto-start sensors
         requestRequiredPermissions()
-
-        // Setup Native Bridge
-        setupNativeBridge()
 
         // Setup Hardware-Accelerated WebView
         setupWebView()
@@ -112,6 +113,9 @@ class MainActivity : AppCompatActivity() {
 
         if (needsRequest) {
             permissionLauncher.launch(permissions.toTypedArray())
+        } else {
+            // Already granted: start hardware sensors immediately
+            bridge.startHardwareSensors()
         }
     }
 
@@ -166,6 +170,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupWebView() {
+        WebView.setWebContentsDebuggingEnabled(true)
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
@@ -186,6 +191,21 @@ class MainActivity : AppCompatActivity() {
             // Register Native JavaScript Bridge
             addJavascriptInterface(bridge, NavICNativeBridge.JS_NAMESPACE)
 
+            webChromeClient = object : android.webkit.WebChromeClient() {
+                override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
+                    consoleMessage?.let { msg ->
+                        val tag = "NavIC-WebConsole"
+                        val text = "${msg.message()} (line ${msg.lineNumber()} of ${msg.sourceId()})"
+                        when (msg.messageLevel()) {
+                            android.webkit.ConsoleMessage.MessageLevel.ERROR -> android.util.Log.e(tag, text)
+                            android.webkit.ConsoleMessage.MessageLevel.WARNING -> android.util.Log.w(tag, text)
+                            else -> android.util.Log.i(tag, text)
+                        }
+                    }
+                    return true
+                }
+            }
+
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     view: WebView,
@@ -194,10 +214,36 @@ class MainActivity : AppCompatActivity() {
                     return assetLoader.shouldInterceptRequest(request.url)
                 }
 
+                override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                    android.util.Log.e("NavIC-WebView", "Render process gone (crashed: ${detail.didCrash()}) - attempting auto-recovery")
+                    isPageLoaded = false
+                    binding.loadingIndicator.visibility = View.VISIBLE
+                    view.post {
+                        view.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
+                    }
+                    return true // Return true to indicate crash handled
+                }
+
+                override fun onReceivedError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    error: android.webkit.WebResourceError
+                ) {
+                    super.onReceivedError(view, request, error)
+                    if (request.isForMainFrame) {
+                        android.util.Log.e("NavIC-WebView", "Main frame load error: ${error.description}")
+                    }
+                }
+
                 override fun onPageFinished(view: WebView, url: String) {
                     super.onPageFinished(view, url)
                     binding.loadingIndicator.visibility = View.GONE
                     isPageLoaded = true
+                    bridge.startHardwareSensors()
+                    view.evaluateJavascript(
+                        "window.dispatchEvent(new CustomEvent('android-permissions-granted'));",
+                        null
+                    )
                     pendingGeoIntentUri?.let { uri ->
                         dispatchGeoIntent(uri)
                     }

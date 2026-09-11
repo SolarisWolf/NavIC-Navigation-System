@@ -458,5 +458,115 @@
     "longitude": 77.2195,
     "address": "Janpath, Near Rajpath, New Delhi",
     "tags": { "tourism": "museum", "historic": "yes" }
+  },
+  {
+    "id": "poi-blr-land-1",
+    "name": "Lalbagh Botanical Garden",
+    "category": "Landmark",
+    "latitude": 12.9507,
+    "longitude": 77.5848,
+    "address": "Mavalli, Bengaluru, Karnataka 560004",
+    "tags": { "tourism": "garden", "historic": "yes" }
+  },
+  {
+    "id": "poi-blr-land-2",
+    "name": "Cubbon Park",
+    "category": "Landmark",
+    "latitude": 12.9763,
+    "longitude": 77.5929,
+    "address": "Kasturba Road, Sampangi Rama Nagara, Bengaluru",
+    "tags": { "tourism": "park", "historic": "yes" }
+  },
+  {
+    "id": "poi-blr-land-3",
+    "name": "Vidhana Soudha",
+    "category": "Landmark",
+    "latitude": 12.9797,
+    "longitude": 77.5907,
+    "address": "Dr. B.R. Ambedkar Veedhi, Sampangi Rama Nagara, Bengaluru",
+    "tags": { "tourism": "legislature", "historic": "yes" }
+  },
+  {
+    "id": "poi-blr-land-4",
+    "name": "Bull Temple (Nandi Temple)",
+    "category": "Landmark",
+    "latitude": 12.9423,
+    "longitude": 77.5679,
+    "address": "Bull Temple Road, Basavanagudi, Bengaluru 560004",
+    "tags": { "tourism": "temple", "historic": "yes" }
+  },
+  {
+    "id": "poi-blr-land-5",
+    "name": "ISRO Headquarters (Antariksh Bhavan)",
+    "category": "Landmark",
+    "latitude": 13.0305,
+    "longitude": 77.5647,
+    "address": "New BEL Road, RMV 2nd Stage, Bengaluru 560094",
+    "tags": { "space": "navic_command", "organization": "isro" }
+  },
+  {
+    "id": "poi-blr-tran-1",
+    "name": "KSR Bengaluru City Railway Station",
+    "category": "Transit",
+    "latitude": 12.9782,
+    "longitude": 77.5695,
+    "address": "Kempegowda, Sevashrama, Bengaluru 560023",
+    "tags": { "railway": "station", "type": "junction" }
+  },
+  {
+    "id": "poi-blr-tran-2",
+    "name": "Kempegowda Majestic Bus Station",
+    "category": "Transit",
+    "latitude": 12.9774,
+    "longitude": 77.5729,
+    "address": "Gubbi Veeranna Crescent Road, Majestic, Bengaluru",
+    "tags": { "bus": "terminal", "type": "intercity" }
+  },
+  {
+    "id": "poi-blr-tran-3",
+    "name": "MG Road Metro Station",
+    "category": "Transit",
+    "latitude": 12.9756,
+    "longitude": 77.6067,
+    "address": "Mahatma Gandhi Road, Bengaluru 560001",
+    "tags": { "subway": "station", "line": "purple" }
+  },
+  {
+    "id": "poi-blr-hosp-1",
+    "name": "Manipal Hospital HAL Old Airport Road",
+    "category": "Hospital",
+    "latitude": 12.9584,
+    "longitude": 77.6489,
+    "address": "98, HAL Old Airport Road, Kodihalli, Bengaluru 560017",
+    "phone": "+91-80-25024444",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-blr-hosp-2",
+    "name": "Fortis Hospital Bannerghatta",
+    "category": "Hospital",
+    "latitude": 12.8943,
+    "longitude": 77.5976,
+    "address": "154/9, Bannerghatta Road, Opposite IIM-B, Bengaluru 560076",
+    "phone": "+91-80-66214444",
+    "tags": { "emergency": "yes", "type": "private" }
+  },
+  {
+    "id": "poi-blr-land-6",
+    "name": "Jayanagar 4th Block Complex",
+    "category": "Landmark",
+    "latitude": 12.9298,
+    "longitude": 77.5835,
+    "address": "11th Main Rd, 4th Block, Jayanagar, Bengaluru 560011",
+    "tags": { "shopping": "mall", "market": "yes" }
+  },
+  {
+    "id": "poi-blr-land-7",
+    "name": "Koramangala 5th Block",
+    "category": "Landmark",
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "address": "Jyoti Nivas College Road, Koramangala, Bengaluru 560095",
+    "tags": { "hub": "commercial", "food": "cluster" }
   }
 ]

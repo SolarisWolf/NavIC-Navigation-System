@@ -10,6 +10,7 @@ import {
   type POI,
   type POICategory,
   type Coordinate,
+  Logger,
 } from '@navic/shared-models';
 import {
   POIDatabase,
@@ -17,18 +18,19 @@ import {
   type POISearchResult,
 } from '@navic/map-core/poi';
 import { fusionService } from './fusion-service.js';
-import delhiPoiData from '../../../../data/poi/delhi-poi.json';
+import bangalorePoiData from '../../../../data/poi/bangalore-poi.json';
 
 export type DestinationListener = (destination: POI | null) => void;
 
 class POIServiceImpl {
+  private logger = new Logger('POIService');
   private database: POIDatabase;
   private selectedDestination: POI | null = null;
   private destinationListeners: Set<DestinationListener> = new Set();
   private lastCoordinate: Coordinate | null = null;
 
   constructor() {
-    this.database = new POIDatabase(delhiPoiData as unknown as POI[]);
+    this.database = new POIDatabase(bangalorePoiData as unknown as POI[]);
 
     // Track vehicle coordinate from EKF fusion
     fusionService.subscribe((estimate) => {
@@ -51,8 +53,8 @@ class POIServiceImpl {
   }
 
   public getVehicleCoordinate(): Coordinate {
-    // Default to Connaught Place / Delhi center if vehicle hasn't reported fix yet
-    return this.lastCoordinate ?? { latitude: 28.6139, longitude: 77.2090, altitude: 216 };
+    // Default to Vidyapeetha / Ashok Nagar, Bengaluru if vehicle hasn't reported fix yet
+    return this.lastCoordinate ?? { latitude: 12.9343, longitude: 77.5627, altitude: 920 };
   }
 
   /**
@@ -93,7 +95,7 @@ class POIServiceImpl {
       try {
         listener(poi);
       } catch (e) {
-        console.error('Destination listener error:', e);
+        this.logger.error('Destination listener error:', e);
       }
     }
   }

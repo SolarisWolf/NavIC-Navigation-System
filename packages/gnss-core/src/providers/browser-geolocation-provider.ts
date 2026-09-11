@@ -17,6 +17,7 @@ import {
   type SatelliteInfo,
   Constellation,
   FixType,
+  Logger,
 } from '@navic/shared-models';
 import { computeVisibleSatellites } from '../simulator/index.js';
 
@@ -34,6 +35,7 @@ export interface BrowserGeolocationConfig {
 export class BrowserGeolocationProvider implements GNSSProvider {
   readonly name = 'Browser Geolocation Hardware';
   readonly isSimulated = false;
+  private readonly logger = new Logger('BrowserGeolocationProvider');
 
   private geolocation: Geolocation | null = null;
   private watchId: number | null = null;
@@ -98,7 +100,7 @@ export class BrowserGeolocationProvider implements GNSSProvider {
 
       this.updateStatus(this.hasFix, this.hasFix ? FixType.Fix3D : FixType.NoFix);
     } catch (err) {
-      console.error('[BrowserGeolocationProvider] Failed to start watchPosition:', err);
+      this.logger.error('Failed to start watchPosition:', err);
       this.updateStatus(false, FixType.NoFix);
     }
   }
@@ -110,7 +112,7 @@ export class BrowserGeolocationProvider implements GNSSProvider {
       try {
         this.geolocation.clearWatch(this.watchId);
       } catch (err) {
-        console.error('[BrowserGeolocationProvider] Error clearing watch:', err);
+        this.logger.error('Error clearing watch:', err);
       }
       this.watchId = null;
     }
@@ -125,7 +127,7 @@ export class BrowserGeolocationProvider implements GNSSProvider {
       try {
         callback(this.lastMeasurement);
       } catch (e) {
-        console.error('[BrowserGeolocationProvider] Error in measurement callback:', e);
+        this.logger.error('Error in measurement callback:', e);
       }
     }
   }
@@ -135,7 +137,7 @@ export class BrowserGeolocationProvider implements GNSSProvider {
     try {
       callback(this.getStatus());
     } catch (e) {
-      console.error('[BrowserGeolocationProvider] Error in status callback:', e);
+      this.logger.error('Error in status callback:', e);
     }
   }
 
@@ -186,13 +188,13 @@ export class BrowserGeolocationProvider implements GNSSProvider {
       try {
         cb(measurement);
       } catch (err) {
-        console.error('[BrowserGeolocationProvider] Callback error:', err);
+        this.logger.error('Callback error:', err);
       }
     }
   }
 
   private handleError(error: GeolocationPositionError): void {
-    console.warn(`[BrowserGeolocationProvider] Geolocation error [${error.code}]: ${error.message}`);
+    this.logger.warn(`Geolocation error [${error.code}]: ${error.message}`);
     this.hasFix = false;
     this.updateStatus(false, FixType.NoFix);
   }
@@ -204,7 +206,7 @@ export class BrowserGeolocationProvider implements GNSSProvider {
       try {
         cb(status);
       } catch (err) {
-        console.error('[BrowserGeolocationProvider] Status callback error:', err);
+        this.logger.error('Status callback error:', err);
       }
     }
   }
